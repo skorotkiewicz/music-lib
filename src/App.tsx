@@ -1,6 +1,6 @@
 import { Music } from "lucide-react";
 import { useState } from "react";
-import { AddTrackForm } from "./components/AddTrackForm";
+import { AddTrackModal } from "./components/AddTrackModal";
 import { TrackList } from "./components/TrackList";
 import "./index.css";
 
@@ -23,13 +23,13 @@ export function App() {
           <p className="text-lg text-gray-600">Add your music tracks and enjoy listening!</p>
         </div>
 
-        {/* Add Track Form */}
+        {/* Add Track Modal */}
         <div className="mb-8">
-          <AddTrackForm onTrackAdded={handleTrackAdded} />
+          <AddTrackModal onTrackAdded={handleTrackAdded} />
         </div>
 
         {/* Track List */}
-        <TrackList refreshTrigger={refreshTrigger} />
+        <TrackList refreshTrigger={refreshTrigger} onTrackAdded={handleTrackAdded} />
 
         {/* Footer */}
         <div className="text-center mt-12 text-gray-500">

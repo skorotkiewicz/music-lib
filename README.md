@@ -5,6 +5,8 @@ A simple music player built with React, BunJS, and react-howler that allows user
 ## Features
 
 - 🎵 Add music tracks by pasting direct links to audio files
+- 📱 Modal-based interface for adding tracks
+- 🎯 Floating action button for quick track addition
 - ▶️ Play, pause, and control volume
 - 📱 Responsive design with modern UI
 - 💾 Persistent storage using JSON file database
@@ -37,9 +39,10 @@ A simple music player built with React, BunJS, and react-howler that allows user
 ## How to Use
 
 1. **Add a Track:**
-   - Paste a direct link to an audio file in the "Audio URL" field
+   - Click the "Add New Track" button or the floating + button (when tracks exist)
+   - Paste a direct link to an audio file in the modal
    - Optionally add a custom title
-   - Click "Add Track"
+   - Click "Add Track" to save
 
 2. **Play Music:**
    - Click on any track in the list to start playing
@@ -62,6 +65,7 @@ A simple music player built with React, BunJS, and react-howler that allows user
 - **Backend:** BunJS server
 - **Audio Player:** react-howler (powered by Howler.js)
 - **UI Components:** Radix UI with Tailwind CSS
+- **Modal System:** Radix UI Dialog components
 - **Database:** JSON file storage
 
 ## Development

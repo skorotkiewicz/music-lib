@@ -2,6 +2,8 @@ import { Loader2, Music, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AddTrackModal } from "./AddTrackModal";
+import { FloatingAddButton } from "./FloatingAddButton";
 import { MusicPlayer } from "./MusicPlayer";
 
 interface Track {
@@ -13,9 +15,10 @@ interface Track {
 
 interface TrackListProps {
   refreshTrigger: number;
+  onTrackAdded: () => void;
 }
 
-export function TrackList({ refreshTrigger }: TrackListProps) {
+export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,9 +78,10 @@ export function TrackList({ refreshTrigger }: TrackListProps) {
     }
   };
 
-  // const handleTrackAdded = (newTrack: Track) => {
-  //   setTracks(prev => [newTrack, ...prev]);
-  // };
+  const handleTrackAdded = (newTrack: Track) => {
+    setTracks((prev) => [newTrack, ...prev]);
+    onTrackAdded();
+  };
 
   const handleNextTrack = () => {
     if (currentTrackIndex !== null && currentTrackIndex < tracks.length - 1) {
@@ -146,7 +150,10 @@ export function TrackList({ refreshTrigger }: TrackListProps) {
           {tracks.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Music className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No tracks yet. Add your first track above!</p>
+              <p>No tracks yet. Add your first track!</p>
+              <div className="mt-4">
+                <AddTrackModal onTrackAdded={handleTrackAdded} />
+              </div>
             </div>
           ) : (
             <div className="space-y-2">
@@ -189,6 +196,13 @@ export function TrackList({ refreshTrigger }: TrackListProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Floating Action Button */}
+      {tracks.length > 0 && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <FloatingAddButton onTrackAdded={handleTrackAdded} />
+        </div>
+      )}
     </div>
   );
 }
