@@ -8,8 +8,19 @@ import "./index.css";
 
 function AppContent() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const { currentTrack, isPlaying, volume, isMuted, togglePlayPause, setVolume, toggleMute } =
-    usePlayer();
+  const {
+    currentTrack,
+    isPlaying,
+    volume,
+    isMuted,
+    tracks,
+    currentTrackIndex,
+    togglePlayPause,
+    setVolume,
+    toggleMute,
+    playNext,
+    playPrevious,
+  } = usePlayer();
 
   const handleTrackAdded = () => {
     setRefreshTrigger((prev) => prev + 1);
@@ -46,6 +57,10 @@ function AppContent() {
         currentTrack={currentTrack}
         isPlaying={isPlaying}
         onPlayPause={togglePlayPause}
+        onNext={playNext}
+        onPrevious={playPrevious}
+        hasNext={currentTrackIndex !== null && currentTrackIndex < tracks.length - 1}
+        hasPrevious={currentTrackIndex !== null && currentTrackIndex > 0}
         volume={volume}
         onVolumeChange={setVolume}
         isMuted={isMuted}

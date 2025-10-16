@@ -22,7 +22,7 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { currentTrack, playTrack } = usePlayer();
+  const { currentTrack, playTrack, setTracks: setGlobalTracks } = usePlayer();
 
   const fetchTracks = useCallback(async () => {
     try {
@@ -36,6 +36,7 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
 
       const data = await response.json();
       setTracks(data);
+      setGlobalTracks(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -62,14 +63,18 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
       }
 
       // Remove track from local state
-      setTracks((prev) => prev.filter((track) => track.id !== trackId));
+      const updatedTracks = tracks.filter((track) => track.id !== trackId);
+      setTracks(updatedTracks);
+      setGlobalTracks(updatedTracks);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete track");
     }
   };
 
   const handleTrackAdded = (newTrack: Track) => {
-    setTracks((prev) => [newTrack, ...prev]);
+    const updatedTracks = [newTrack, ...tracks];
+    setTracks(updatedTracks);
+    setGlobalTracks(updatedTracks);
     onTrackAdded();
   };
 
