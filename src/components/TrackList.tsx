@@ -2,9 +2,9 @@ import { Loader2, Music, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePlayer } from "../contexts/PlayerContext";
 import { AddTrackModal } from "./AddTrackModal";
 import { FloatingAddButton } from "./FloatingAddButton";
-import { MusicPlayer } from "./MusicPlayer";
 
 interface Track {
   id: string;
@@ -22,7 +22,7 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
+  const { currentTrack, playTrack } = usePlayer();
 
   const fetchTracks = useCallback(async () => {
     try {
@@ -63,16 +63,6 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
 
       // Remove track from local state
       setTracks((prev) => prev.filter((track) => track.id !== trackId));
-
-      // Adjust current track index if needed
-      if (currentTrackIndex !== null) {
-        const deletedIndex = tracks.findIndex((track) => track.id === trackId);
-        if (deletedIndex < currentTrackIndex) {
-          setCurrentTrackIndex(currentTrackIndex - 1);
-        } else if (deletedIndex === currentTrackIndex) {
-          setCurrentTrackIndex(null);
-        }
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete track");
     }
@@ -83,20 +73,8 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
     onTrackAdded();
   };
 
-  const handleNextTrack = () => {
-    if (currentTrackIndex !== null && currentTrackIndex < tracks.length - 1) {
-      setCurrentTrackIndex(currentTrackIndex + 1);
-    }
-  };
-
-  const handlePreviousTrack = () => {
-    if (currentTrackIndex !== null && currentTrackIndex > 0) {
-      setCurrentTrackIndex(currentTrackIndex - 1);
-    }
-  };
-
-  const playTrack = (index: number) => {
-    setCurrentTrackIndex(index);
+  const handlePlayTrack = (track: Track) => {
+    playTrack(track);
   };
 
   if (isLoading) {
@@ -123,20 +101,6 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
-      {/* Current Player */}
-      {currentTrackIndex !== null && tracks[currentTrackIndex] && (
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-4 text-center">Now Playing</h2>
-          <MusicPlayer
-            track={tracks[currentTrackIndex]}
-            onNext={handleNextTrack}
-            onPrevious={handlePreviousTrack}
-            hasNext={currentTrackIndex < tracks.length - 1}
-            hasPrevious={currentTrackIndex > 0}
-          />
-        </div>
-      )}
-
       {/* Track List */}
       <Card>
         <CardHeader>
@@ -157,17 +121,19 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
             </div>
           ) : (
             <div className="space-y-2">
-              {tracks.map((track, index) => (
+              {tracks.map((track) => (
                 <div
                   key={track.id}
                   className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                    currentTrackIndex === index ? "bg-blue-50 border-blue-200" : "hover:bg-gray-50"
+                    currentTrack?.id === track.id
+                      ? "bg-blue-50 border-blue-200"
+                      : "hover:bg-gray-50"
                   }`}
                 >
                   <div className="flex-1 min-w-0">
                     <button
                       type="button"
-                      onClick={() => playTrack(index)}
+                      onClick={() => handlePlayTrack(track)}
                       className="text-left w-full"
                     >
                       <h3 className="font-medium truncate">{track.title}</h3>
@@ -178,7 +144,7 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
                     </button>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    {currentTrackIndex === index && (
+                    {currentTrack?.id === track.id && (
                       <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
                     )}
                     <Button
@@ -199,7 +165,7 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
 
       {/* Floating Action Button */}
       {tracks.length > 0 && (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-20 right-6 z-40">
           <FloatingAddButton onTrackAdded={handleTrackAdded} />
         </div>
       )}
