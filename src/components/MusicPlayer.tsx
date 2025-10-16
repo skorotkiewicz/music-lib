@@ -1,5 +1,5 @@
 import { Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactHowler from "react-howler";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,12 +23,40 @@ export function MusicPlayer({ track, onNext, onPrevious, hasNext, hasPrevious }:
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
-  const [duration] = useState(0);
-  const [seek, setSeek] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const playerRef = useRef<ReactHowler>(null);
+
+  // Reset current time when track changes
+  useEffect(() => {
+    setCurrentTime(0);
+    setDuration(0);
+  }, [track.id]);
+
+  // Update current time every second when playing
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+
+    if (isPlaying && playerRef.current) {
+      interval = setInterval(() => {
+        if (playerRef.current) {
+          const time = playerRef.current.seek();
+          if (typeof time === "number") {
+            setCurrentTime(time);
+          }
+        }
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isPlaying]);
 
   const handlePlay = () => {
     setIsPlaying(true);
@@ -41,7 +69,7 @@ export function MusicPlayer({ track, onNext, onPrevious, hasNext, hasPrevious }:
 
   const handleEnd = () => {
     setIsPlaying(false);
-    setSeek(0);
+    setCurrentTime(0);
     if (onNext && hasNext) {
       onNext();
     }
@@ -50,6 +78,12 @@ export function MusicPlayer({ track, onNext, onPrevious, hasNext, hasPrevious }:
   const handleLoad = () => {
     setIsLoading(false);
     setError(null);
+    if (playerRef.current) {
+      const dur = playerRef.current.duration();
+      if (typeof dur === "number") {
+        setDuration(dur);
+      }
+    }
   };
 
   const handleLoadError = () => {
@@ -58,12 +92,40 @@ export function MusicPlayer({ track, onNext, onPrevious, hasNext, hasPrevious }:
     setIsPlaying(false);
   };
 
-  // const handleSeek = (newSeek: number) => {
-  //   setSeek(newSeek);
-  //   if (playerRef.current) {
-  //     playerRef.current.seek(newSeek);
-  //   }
-  // };
+  const handleSeek = (newTime: number) => {
+    setCurrentTime(newTime);
+    if (playerRef.current) {
+      playerRef.current.seek(newTime);
+    }
+  };
+
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
+
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!duration) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = clickX / rect.width;
+    const newTime = percentage * duration;
+
+    handleSeek(newTime);
+  };
+
+  const handleProgressHover = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!duration) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const hoverX = e.clientX - rect.left;
+    const percentage = hoverX / rect.width;
+    const time = percentage * duration;
+
+    setHoverTime(time);
+  };
+
+  const handleProgressLeave = () => {
+    setHoverTime(null);
+  };
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
@@ -114,14 +176,31 @@ export function MusicPlayer({ track, onNext, onPrevious, hasNext, hasPrevious }:
         {!isLoading && !error && (
           <div className="space-y-2">
             <div className="flex justify-between text-xs text-gray-500">
-              <span>{formatTime(seek)}</span>
+              <span>{formatTime(currentTime)}</span>
               <span>{formatTime(duration)}</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="relative">
               <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${duration > 0 ? (seek / duration) * 100 : 0}%` }}
-              />
+                className="w-full bg-gray-200 rounded-full h-2 cursor-pointer hover:h-3 transition-all duration-200"
+                onClick={handleProgressClick}
+                onMouseMove={handleProgressHover}
+                onMouseLeave={handleProgressLeave}
+              >
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300 hover:h-3"
+                  style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+                />
+              </div>
+              {hoverTime !== null && (
+                <div
+                  className="absolute top-0 transform -translate-y-full -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded pointer-events-none"
+                  style={{
+                    left: `${duration > 0 ? (hoverTime / duration) * 100 : 0}%`,
+                  }}
+                >
+                  {formatTime(hoverTime)}
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -171,7 +171,7 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
                       className="text-left w-full"
                     >
                       <h3 className="font-medium truncate">{track.title}</h3>
-                      <p className="text-sm text-gray-500 truncate">{track.url}</p>
+                      {/* <p className="text-sm text-gray-500 truncate">{track.url}</p> */}
                       <p className="text-xs text-gray-400">
                         Added: {new Date(track.addedAt).toLocaleDateString()}
                       </p>

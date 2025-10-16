@@ -8,6 +8,9 @@ A simple music player built with React, BunJS, and react-howler that allows user
 - 📱 Modal-based interface for adding tracks
 - 🎯 Floating action button for quick track addition
 - ▶️ Play, pause, and control volume
+- ⏱️ Real-time current time display with progress bar
+- 🎯 Clickable progress bar for seeking
+- 🔍 Hover tooltip showing exact time position
 - 📱 Responsive design with modern UI
 - 💾 Persistent storage using JSON file database
 - 🗑️ Delete tracks from your library
@@ -47,7 +50,10 @@ A simple music player built with React, BunJS, and react-howler that allows user
 2. **Play Music:**
    - Click on any track in the list to start playing
    - Use the player controls to play/pause, adjust volume, or skip tracks
+   - Click anywhere on the progress bar to seek to that position
+   - Hover over the progress bar to see the exact time at that position
    - The currently playing track will be highlighted
+   - Current time and total duration are displayed in real-time
 
 3. **Manage Tracks:**
    - Delete tracks using the trash icon
