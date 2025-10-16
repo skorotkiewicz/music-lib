@@ -1,6 +1,6 @@
 import { Music } from "lucide-react";
 import { useState } from "react";
-import { AddTrackModal } from "./components/AddTrackModal";
+// import { AddTrackModal } from "./components/AddTrackModal";
 import { BottomPlayer } from "./components/BottomPlayer";
 import { TrackList } from "./components/TrackList";
 import { PlayerProvider, usePlayer } from "./contexts/PlayerContext";
@@ -39,9 +39,9 @@ function AppContent() {
         </div>
 
         {/* Add Track Modal */}
-        <div className="mb-8">
+        {/* <div className="mb-8">
           <AddTrackModal onTrackAdded={handleTrackAdded} />
-        </div>
+        </div> */}
 
         {/* Track List */}
         <TrackList refreshTrigger={refreshTrigger} onTrackAdded={handleTrackAdded} />

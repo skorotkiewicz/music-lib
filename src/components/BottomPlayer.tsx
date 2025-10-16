@@ -46,9 +46,16 @@ export function BottomPlayer({
   useEffect(() => {
     setCurrentTime(0);
     setDuration(0);
+    // Try to get duration immediately if player is ready
+    if (playerRef.current) {
+      const dur = playerRef.current.duration();
+      if (typeof dur === "number" && dur > 0) {
+        setDuration(dur);
+      }
+    }
   }, [currentTrack?.id]);
 
-  // Update current time every second when playing
+  // Update current time more frequently for smoother progress bar
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
 
@@ -60,7 +67,7 @@ export function BottomPlayer({
             setCurrentTime(time);
           }
         }
-      }, 1000);
+      }, 100); // Update every 100ms for smoother animation
     }
 
     return () => {
@@ -68,13 +75,33 @@ export function BottomPlayer({
         clearInterval(interval);
       }
     };
-  }, [isPlaying]);
+  }, [isPlaying, currentTrack?.id]);
 
   const handleLoad = () => {
     if (playerRef.current) {
       const dur = playerRef.current.duration();
-      if (typeof dur === "number") {
+      if (typeof dur === "number" && dur > 0) {
         setDuration(dur);
+      }
+    }
+  };
+
+  const handlePlay = () => {
+    // Update current time immediately when play starts
+    if (playerRef.current) {
+      const time = playerRef.current.seek();
+      if (typeof time === "number") {
+        setCurrentTime(time);
+      }
+    }
+  };
+
+  const handlePause = () => {
+    // Update current time when paused
+    if (playerRef.current) {
+      const time = playerRef.current.seek();
+      if (typeof time === "number") {
+        setCurrentTime(time);
       }
     }
   };
@@ -131,8 +158,8 @@ export function BottomPlayer({
         playing={isPlaying}
         volume={isMuted ? 0 : volume}
         onLoad={handleLoad}
-        onPlay={() => {}}
-        onPause={() => {}}
+        onPlay={handlePlay}
+        onPause={handlePause}
         onEnd={() => {
           setCurrentTime(0);
           if (onNext && hasNext) {
@@ -145,16 +172,21 @@ export function BottomPlayer({
       {/* Bottom Player Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-gray-900 text-white border-t border-gray-700">
         {/* Progress Bar */}
-        <div className="relative h-1 bg-gray-700">
+        <div className="relative h-1 bg-gray-600">
           <div
-            className="h-full bg-green-500 cursor-pointer hover:bg-green-400 transition-colors"
+            className="h-full bg-gray-600 cursor-pointer hover:bg-gray-500 transition-colors"
             onClick={handleProgressClick}
             onMouseMove={handleProgressHover}
             onMouseLeave={handleProgressLeave}
           >
             <div
-              className="h-full bg-green-500 transition-all duration-300"
-              style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+              className={`h-full bg-green-500 transition-all duration-100 ${
+                isPlaying ? "animate-pulse" : ""
+              }`}
+              style={{
+                width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
+                minWidth: duration > 0 ? "2px" : "0px",
+              }}
             />
           </div>
           {hoverTime !== null && (
@@ -185,7 +217,10 @@ export function BottomPlayer({
           </div>
 
           {/* Center Controls */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-4">
+            {/* Current Time */}
+            <span className="text-xs text-gray-300 w-12 text-right">{formatTime(currentTime)}</span>
+
             <Button
               variant="ghost"
               size="sm"
@@ -212,6 +247,9 @@ export function BottomPlayer({
             >
               <SkipForward className="h-4 w-4" />
             </Button>
+
+            {/* Total Time */}
+            <span className="text-xs text-gray-300 w-12 text-left">{formatTime(duration)}</span>
           </div>
 
           {/* Volume Control */}
@@ -232,18 +270,13 @@ export function BottomPlayer({
                 step="0.1"
                 value={isMuted ? 0 : volume}
                 onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
-                className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
               />
             </div>
             <span className="text-xs text-gray-400 w-8">
               {Math.round((isMuted ? 0 : volume) * 100)}%
             </span>
           </div>
-        </div>
-
-        {/* Time Display */}
-        <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-          {formatTime(currentTime)} / {formatTime(duration)}
         </div>
       </div>
     </>

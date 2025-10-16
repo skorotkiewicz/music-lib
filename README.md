@@ -10,9 +10,10 @@ A simple music player built with React, BunJS, and react-howler that allows user
 - ▶️ Play, pause, and control volume
 - ⏭️ Skip between tracks (previous/next)
 - 🔄 Auto-play next track when current track ends
-- ⏱️ Real-time current time display with progress bar
+- ⏱️ Real-time current time display with smooth progress bar
 - 🎯 Clickable progress bar for seeking
 - 🔍 Hover tooltip showing exact time position
+- ✨ Smooth progress bar animation (100ms updates)
 - 📱 Responsive design with modern UI
 - 💾 Persistent storage using JSON file database
 - 🗑️ Delete tracks from your library

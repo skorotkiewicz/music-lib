@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePlayer } from "../contexts/PlayerContext";
-import { AddTrackModal } from "./AddTrackModal";
+// import { AddTrackModal } from "./AddTrackModal";
 import { FloatingAddButton } from "./FloatingAddButton";
 
 interface Track {
@@ -120,9 +120,9 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
             <div className="text-center py-8 text-gray-500">
               <Music className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No tracks yet. Add your first track!</p>
-              <div className="mt-4">
+              {/* <div className="mt-4">
                 <AddTrackModal onTrackAdded={handleTrackAdded} />
-              </div>
+              </div> */}
             </div>
           ) : (
             <div className="space-y-2">
