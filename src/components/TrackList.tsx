@@ -3,14 +3,24 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePlayer } from "../contexts/PlayerContext";
-// import { AddTrackModal } from "./AddTrackModal";
 import { FloatingAddButton } from "./FloatingAddButton";
+
+const API_BASE = "http://localhost:8080";
 
 interface Track {
   id: string;
   url: string;
   title: string;
-  addedAt: string;
+  addedAt?: string;
+}
+
+interface ApiTrack {
+  id: string;
+  title: string;
+  url: string;
+  session_id: string;
+  total_segments: number;
+  segment_duration: number;
 }
 
 interface TrackListProps {
@@ -28,21 +38,31 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await fetch("/api/tracks");
+      // Fetch from Rust server's HLS cache
+      const response = await fetch(`${API_BASE}/api/tracks`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch tracks");
       }
 
-      const data = await response.json();
-      setTracks(data);
-      setGlobalTracks(data);
+      const data: ApiTrack[] = await response.json();
+
+      // Transform API tracks to Track format with full URLs
+      const transformedTracks: Track[] = data.map((apiTrack) => ({
+        id: apiTrack.id,
+        title: apiTrack.title,
+        url: `${API_BASE}${apiTrack.url}`,
+        addedAt: new Date().toISOString(), // API doesn't provide this
+      }));
+
+      setTracks(transformedTracks);
+      setGlobalTracks(transformedTracks);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [setGlobalTracks]);
 
   useEffect(() => {
     fetchTracks();
@@ -53,28 +73,16 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
       return;
     }
 
-    try {
-      const response = await fetch(`/api/tracks/${trackId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete track");
-      }
-
-      // Remove track from local state
-      const updatedTracks = tracks.filter((track) => track.id !== trackId);
-      setTracks(updatedTracks);
-      setGlobalTracks(updatedTracks);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete track");
-    }
+    // For now, just remove from local state
+    // TODO: Add delete endpoint to Rust server
+    const updatedTracks = tracks.filter((track) => track.id !== trackId);
+    setTracks(updatedTracks);
+    setGlobalTracks(updatedTracks);
   };
 
   const handleTrackAdded = (newTrack: Track) => {
-    const updatedTracks = [newTrack, ...tracks];
-    setTracks(updatedTracks);
-    setGlobalTracks(updatedTracks);
+    // Refresh the track list from the server
+    fetchTracks();
     onTrackAdded();
   };
 
@@ -113,16 +121,16 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
             <Music className="h-5 w-5" />
             Your Music Library ({tracks.length} tracks)
           </CardTitle>
-          <CardDescription>Click on any track to start playing</CardDescription>
+          <CardDescription>Click on any track to start playing (HLS streaming)</CardDescription>
         </CardHeader>
         <CardContent>
           {tracks.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Music className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No tracks yet. Add your first track!</p>
-              {/* <div className="mt-4">
-                <AddTrackModal onTrackAdded={handleTrackAdded} />
-              </div> */}
+              <div className="mt-4">
+                <FloatingAddButton onTrackAdded={handleTrackAdded} />
+              </div>
             </div>
           ) : (
             <div className="space-y-2">
@@ -142,10 +150,7 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
                       className="text-left w-full"
                     >
                       <h3 className="font-medium truncate">{track.title}</h3>
-                      {/* <p className="text-sm text-gray-500 truncate">{track.url}</p> */}
-                      <p className="text-xs text-gray-400">
-                        Added: {new Date(track.addedAt).toLocaleDateString()}
-                      </p>
+                      <p className="text-xs text-gray-400">HLS Stream</p>
                     </button>
                   </div>
                   <div className="flex items-center gap-2 ml-4">

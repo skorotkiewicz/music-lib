@@ -16,10 +16,12 @@
 		"bun-plugin-tailwind": "^0.1.2",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
+		"hls.js": "^1.6.15",
 		"howler": "^2.2.4",
 		"lucide-react": "^0.546.0",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
+		"react-hls-player": "^3.0.7",
 		"react-howler": "^5.2.0",
 		"tailwind-merge": "^3.3.1"
 	},

@@ -47,27 +47,36 @@ export function FloatingAddButton({ onTrackAdded }: FloatingAddButtonProps) {
     setSuccess(null);
 
     try {
-      const response = await fetch("/api/tracks", {
+      // Call the Rust server's download endpoint
+      const response = await fetch("http://localhost:8080/api/download", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           url: url.trim(),
-          title: title.trim() || undefined,
+          title: title.trim() || null,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to add track");
+        throw new Error(data.error || "Failed to download and convert track");
       }
 
-      setSuccess("Track added successfully!");
+      // Create a track object from the download response
+      const newTrack: Track = {
+        id: data.id,
+        url: `http://localhost:8080${data.playlist_url}`,
+        title: data.title,
+        addedAt: new Date().toISOString(),
+      };
+
+      setSuccess("Track downloaded and ready to play!");
       setUrl("");
       setTitle("");
-      onTrackAdded(data);
+      onTrackAdded(newTrack);
       setOpen(false);
 
       // Clear success message after 3 seconds
@@ -118,7 +127,8 @@ export function FloatingAddButton({ onTrackAdded }: FloatingAddButtonProps) {
             Add New Track
           </DialogTitle>
           <DialogDescription>
-            Paste a direct link to an audio file (e.g., .wav, .mp3, .m4a)
+            Paste a URL from YouTube, SoundCloud, or any supported site. The audio will be
+            downloaded and converted to HLS for streaming.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -127,7 +137,7 @@ export function FloatingAddButton({ onTrackAdded }: FloatingAddButtonProps) {
             <Input
               id={urlId}
               type="url"
-              placeholder="https://example.com/music.wav"
+              placeholder="https://youtube.com/watch?v=... or any audio URL"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               disabled={isLoading}
@@ -157,9 +167,11 @@ export function FloatingAddButton({ onTrackAdded }: FloatingAddButtonProps) {
           )}
 
           <div className="p-3 bg-blue-50 rounded text-sm text-blue-700">
-            <strong>Supported formats:</strong> .wav, .mp3, .m4a, .ogg, .webm
+            <strong>Supported sources:</strong> YouTube, SoundCloud, Bandcamp, Vimeo, and 1000+ more
+            sites
             <br />
-            <strong>Note:</strong> The URL must be a direct link to the audio file.
+            <strong>Note:</strong> Audio will be downloaded and converted to HLS format for
+            streaming.
           </div>
 
           <DialogFooter>
@@ -175,7 +187,7 @@ export function FloatingAddButton({ onTrackAdded }: FloatingAddButtonProps) {
               {isLoading ? (
                 <>
                   <Plus className="mr-2 h-4 w-4 animate-spin" />
-                  Adding Track...
+                  Downloading & Converting...
                 </>
               ) : (
                 <>
