@@ -73,14 +73,25 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
       return;
     }
 
-    // For now, just remove from local state
-    // TODO: Add delete endpoint to Rust server
-    const updatedTracks = tracks.filter((track) => track.id !== trackId);
-    setTracks(updatedTracks);
-    setGlobalTracks(updatedTracks);
+    try {
+      const response = await fetch(`${API_BASE}/api/tracks/${trackId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete track");
+      }
+
+      // Remove track from local state
+      const updatedTracks = tracks.filter((track) => track.id !== trackId);
+      setTracks(updatedTracks);
+      setGlobalTracks(updatedTracks);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete track");
+    }
   };
 
-  const handleTrackAdded = (newTrack: Track) => {
+  const handleTrackAdded = () => {
     // Refresh the track list from the server
     fetchTracks();
     onTrackAdded();

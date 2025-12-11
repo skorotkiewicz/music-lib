@@ -582,7 +582,55 @@ async fn main() {
             }
         });
     
+    // Delete track endpoint
+    let delete_track_route = warp::path("api")
+        .and(warp::path("tracks"))
+        .and(warp::path::param::<String>())
+        .and(warp::path::end())
+        .and(warp::delete())
+        .and_then({
+            let hls_cache = Arc::clone(&hls_cache);
+            let cache_dir = Arc::clone(&cache_dir);
+            move |track_id: String| {
+                let hls_cache = Arc::clone(&hls_cache);
+                let cache_dir = Arc::clone(&cache_dir);
+                async move {
+                    // Find and remove the session from cache
+                    let session_to_delete = {
+                        let mut cache = hls_cache.lock().unwrap();
+                        cache.remove(&track_id)
+                    };
+                    
+                    if let Some(session) = session_to_delete {
+                        // Delete the segments directory
+                        if session.segments_dir.exists() {
+                            if let Err(e) = tokio::fs::remove_dir_all(&session.segments_dir).await {
+                                eprintln!("Warning: Failed to delete segments dir: {}", e);
+                            }
+                        }
+                        
+                        // Save updated cache to disk
+                        let cache_data = {
+                            let cache = hls_cache.lock().unwrap();
+                            cache.clone()
+                        };
+                        if let Err(e) = save_hls_cache(&cache_dir, &cache_data).await {
+                            eprintln!("Warning: Failed to save HLS cache: {}", e);
+                        }
+                        
+                        Ok::<_, warp::Rejection>(warp::reply::json(&serde_json::json!({
+                            "success": true,
+                            "message": format!("Track '{}' deleted", session.title)
+                        })))
+                    } else {
+                        Err(warp::reject::not_found())
+                    }
+                }
+            }
+        });
+    
     let routes = tracks_route
+        .or(delete_track_route)
         .or(hls_playlist_route)
         .or(hls_segment_route)
         .or(download_route)

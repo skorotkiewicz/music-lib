@@ -4,7 +4,7 @@ interface Track {
   id: string;
   url: string;
   title: string;
-  addedAt: string;
+  addedAt?: string;
 }
 
 interface PlayerContextType {
