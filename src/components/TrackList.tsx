@@ -43,7 +43,7 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
         const data = await response.json();
         setIsReadonly(data.readonly);
       }
-    } catch (err) {
+    } catch {
       // Default to readwrite if mode endpoint fails
       setIsReadonly(false);
     }
@@ -109,7 +109,7 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
     }
   };
 
-  const handleTrackAdded = (newTrack: Track) => {
+  const handleTrackAdded = () => {
     // Refresh the track list from the server
     fetchTracks();
     onTrackAdded();
