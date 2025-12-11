@@ -1,5 +1,7 @@
 import { createContext, type ReactNode, useContext, useState } from "react";
 
+export type RepeatMode = "none" | "all" | "one";
+
 interface Track {
   id: string;
   url: string;
@@ -14,6 +16,7 @@ interface PlayerContextType {
   isMuted: boolean;
   tracks: Track[];
   currentTrackIndex: number | null;
+  repeatMode: RepeatMode;
   setCurrentTrack: (track: Track | null) => void;
   setIsPlaying: (playing: boolean) => void;
   setVolume: (volume: number) => void;
@@ -22,7 +25,9 @@ interface PlayerContextType {
   playTrack: (track: Track) => void;
   togglePlayPause: () => void;
   toggleMute: () => void;
+  toggleRepeatMode: () => void;
   playNext: () => void;
+  playNextAuto: () => void;
   playPrevious: () => void;
 }
 
@@ -35,6 +40,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [isMuted, setIsMuted] = useState(false);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>("none");
 
   const playTrack = (track: Track) => {
     const index = tracks.findIndex((t) => t.id === track.id);
@@ -44,12 +50,59 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   };
 
   const playNext = () => {
-    if (currentTrackIndex !== null && currentTrackIndex < tracks.length - 1) {
-      const nextTrack = tracks[currentTrackIndex + 1];
-      if (nextTrack) {
-        setCurrentTrack(nextTrack);
-        setCurrentTrackIndex(currentTrackIndex + 1);
-        setIsPlaying(true);
+    if (currentTrackIndex !== null) {
+      // If repeat all is on, we wrap around
+      // If repeat one is on, manual next should still go to next track?
+      // Usually yes. Repeat One only applies to auto-progression.
+
+      let nextIndex = currentTrackIndex + 1;
+
+      // Wrap around if we are at the end and repeat mode is ALL
+      // Standard UX: Next button at end of playlist -> Stop or Wrap?
+      // If repeat ALL -> Wrap.
+      // If repeat NONE -> Stop (disable button usually) or do nothing.
+      if (repeatMode === "all" && nextIndex >= tracks.length) {
+        nextIndex = 0;
+      }
+
+      if (nextIndex < tracks.length) {
+        const nextTrack = tracks[nextIndex];
+        if (nextTrack) {
+          setCurrentTrack(nextTrack);
+          setCurrentTrackIndex(nextIndex);
+          setIsPlaying(true);
+        }
+      }
+    }
+  };
+
+  const playNextAuto = () => {
+    if (currentTrackIndex !== null) {
+      if (repeatMode === "one") {
+        const currentHookTrack = tracks[currentTrackIndex];
+        if (currentHookTrack) {
+          setCurrentTrack({ ...currentHookTrack }); // Force new reference to trigger effects?
+          setIsPlaying(true);
+        }
+        return;
+      }
+
+      let nextIndex = currentTrackIndex + 1;
+
+      if (repeatMode === "all" && nextIndex >= tracks.length) {
+        nextIndex = 0;
+      }
+
+      if (nextIndex < tracks.length) {
+        const nextTrack = tracks[nextIndex];
+        if (nextTrack) {
+          setCurrentTrack(nextTrack);
+          setCurrentTrackIndex(nextIndex);
+          setIsPlaying(true);
+        }
+      } else {
+        // End of playlist, stop
+        setIsPlaying(false);
       }
     }
   };
@@ -73,6 +126,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setIsMuted(!isMuted);
   };
 
+  const toggleRepeatMode = () => {
+    setRepeatMode((prev) => {
+      if (prev === "none") return "all";
+      if (prev === "all") return "one";
+      return "none";
+    });
+  };
+
   const value: PlayerContextType = {
     currentTrack,
     isPlaying,
@@ -80,6 +141,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     isMuted,
     tracks,
     currentTrackIndex,
+    repeatMode,
     setCurrentTrack,
     setIsPlaying,
     setVolume,
@@ -88,7 +150,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     playTrack,
     togglePlayPause,
     toggleMute,
+    toggleRepeatMode,
     playNext,
+    playNextAuto,
     playPrevious,
   };
 

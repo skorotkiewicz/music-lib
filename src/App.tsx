@@ -1,5 +1,6 @@
-import { Music } from "lucide-react";
+import { Music, Search } from "lucide-react";
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
 // import { AddTrackModal } from "./components/AddTrackModal";
 import { BottomPlayer } from "./components/BottomPlayer";
 import { TrackList } from "./components/TrackList";
@@ -8,6 +9,7 @@ import "./index.css";
 
 function AppContent() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const {
     currentTrack,
     isPlaying,
@@ -19,7 +21,10 @@ function AppContent() {
     setVolume,
     toggleMute,
     playNext,
+    playNextAuto,
     playPrevious,
+    repeatMode,
+    toggleRepeatMode,
   } = usePlayer();
 
   const handleTrackAdded = () => {
@@ -43,8 +48,23 @@ function AppContent() {
           <AddTrackModal onTrackAdded={handleTrackAdded} />
         </div> */}
 
+        {/* Search Bar */}
+        <div className="max-w-md mx-auto mb-8 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <Input
+            className="pl-10 bg-white/60 border-blue-100 focus:bg-white transition-all shadow-sm"
+            placeholder="Search for a song..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
         {/* Track List */}
-        <TrackList refreshTrigger={refreshTrigger} onTrackAdded={handleTrackAdded} />
+        <TrackList
+          refreshTrigger={refreshTrigger}
+          onTrackAdded={handleTrackAdded}
+          searchQuery={searchQuery}
+        />
 
         {/* Footer */}
         <div className="text-center mt-12 text-gray-500">
@@ -58,13 +78,20 @@ function AppContent() {
         isPlaying={isPlaying}
         onPlayPause={togglePlayPause}
         onNext={playNext}
+        onAutoNext={playNextAuto}
         onPrevious={playPrevious}
-        hasNext={currentTrackIndex !== null && currentTrackIndex < tracks.length - 1}
+        hasNext={
+          tracks.length > 0 &&
+          (repeatMode === "all" ||
+            (currentTrackIndex !== null && currentTrackIndex < tracks.length - 1))
+        }
         hasPrevious={currentTrackIndex !== null && currentTrackIndex > 0}
         volume={volume}
         onVolumeChange={setVolume}
         isMuted={isMuted}
         onMuteToggle={toggleMute}
+        repeatMode={repeatMode}
+        onToggleRepeat={toggleRepeatMode}
       />
     </div>
   );

@@ -1,5 +1,14 @@
 import Hls from "hls.js";
-import { Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from "lucide-react";
+import {
+  Pause,
+  Play,
+  Repeat,
+  Repeat1,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactHowler from "react-howler";
 import { Button } from "@/components/ui/button";
@@ -17,12 +26,15 @@ interface BottomPlayerProps {
   onPlayPause: () => void;
   onNext?: () => void;
   onPrevious?: () => void;
+  onAutoNext?: () => void;
   hasNext?: boolean;
   hasPrevious?: boolean;
   volume: number;
   onVolumeChange: (volume: number) => void;
   isMuted: boolean;
   onMuteToggle: () => void;
+  repeatMode: "none" | "all" | "one";
+  onToggleRepeat: () => void;
 }
 
 // Helper to detect if URL is an HLS playlist
@@ -36,12 +48,15 @@ export function BottomPlayer({
   onPlayPause,
   onNext,
   onPrevious,
+  onAutoNext,
   hasNext,
   hasPrevious,
   volume,
   onVolumeChange,
   isMuted,
   onMuteToggle,
+  repeatMode,
+  onToggleRepeat,
 }: BottomPlayerProps) {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -263,7 +278,17 @@ export function BottomPlayer({
 
   const handleHlsEnded = () => {
     setCurrentTime(0);
-    if (onNext && hasNext) {
+    if (repeatMode === "one") {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch(console.error);
+      }
+      return;
+    }
+
+    if (onAutoNext) {
+      onAutoNext();
+    } else if (onNext && hasNext) {
       onNext();
     }
   };
@@ -285,8 +310,25 @@ export function BottomPlayer({
           onPlay={handlePlay}
           onPause={handlePause}
           onEnd={() => {
-            setCurrentTime(0);
-            if (onNext && hasNext) {
+            setCurrentTime(0); // Reset UI time
+            if (repeatMode === "one") {
+              // Replay standard audio
+              if (playerRef.current) {
+                playerRef.current.seek(0);
+                // Note: ReactHowler should stay playing if 'playing' prop is true.
+                // However, sometimes Howler internal state needs a kick if it thinks it ended.
+                // But usually seek(0) is enough if loop is false.
+                // We could also force a small timeout to ensure state update?
+                // Or we can rely on ReactHowler's behavior.
+                // If it doesn't auto-resume, we might need to toggle playing.
+                // But typically seek(0) in onEnd while playing=true works for simple loops if handled manually.
+              }
+              return;
+            }
+
+            if (onAutoNext) {
+              onAutoNext();
+            } else if (onNext && hasNext) {
               onNext();
             }
           }}
@@ -357,7 +399,7 @@ export function BottomPlayer({
               size="sm"
               onClick={onPrevious}
               disabled={!hasPrevious}
-              className="text-white hover:bg-gray-800"
+              className="text-white hover:bg-gray-800 hover:text-white"
             >
               <SkipBack className="h-4 w-4" />
             </Button>
@@ -374,9 +416,27 @@ export function BottomPlayer({
               size="sm"
               onClick={onNext}
               disabled={!hasNext}
-              className="text-white hover:bg-gray-800"
+              className="text-white hover:bg-gray-800 hover:text-white"
             >
               <SkipForward className="h-4 w-4" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggleRepeat}
+              className={`hover:bg-gray-800 ${
+                repeatMode !== "none"
+                  ? "text-green-500 hover:text-green-400"
+                  : "text-gray-400 hover:text-white"
+              }`}
+              title={`Repeat: ${repeatMode}`}
+            >
+              {repeatMode === "one" ? (
+                <Repeat1 className="h-4 w-4 text-green-500" />
+              ) : (
+                <Repeat className={`h-4 w-4 ${repeatMode === "all" ? "text-green-500" : ""}`} />
+              )}
             </Button>
 
             {/* Total Time */}
@@ -389,7 +449,7 @@ export function BottomPlayer({
               variant="ghost"
               size="sm"
               onClick={onMuteToggle}
-              className="text-white hover:bg-gray-800"
+              className="text-white hover:bg-gray-800 hover:text-white"
             >
               {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
             </Button>

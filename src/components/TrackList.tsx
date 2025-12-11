@@ -26,14 +26,19 @@ interface ApiTrack {
 interface TrackListProps {
   refreshTrigger: number;
   onTrackAdded: () => void;
+  searchQuery?: string;
 }
 
-export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
+export function TrackList({ refreshTrigger, onTrackAdded, searchQuery = "" }: TrackListProps) {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isReadonly, setIsReadonly] = useState(false);
   const { currentTrack, playTrack, setTracks: setGlobalTracks } = usePlayer();
+
+  const filteredTracks = tracks.filter((track) =>
+    track.title.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   // Fetch mode from server
   const fetchMode = useCallback(async () => {
@@ -148,7 +153,7 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Music className="h-5 w-5" />
-            Your Music Library ({tracks.length} tracks)
+            Your Music Library ({filteredTracks.length} tracks)
             {isReadonly && (
               <span className="ml-2 text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">RO</span>
             )}
@@ -156,11 +161,11 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
           <CardDescription>Click on any track to start playing (HLS streaming)</CardDescription>
         </CardHeader>
         <CardContent>
-          {tracks.length === 0 ? (
+          {filteredTracks.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Music className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No tracks yet. {!isReadonly && "Add your first track!"}</p>
-              {!isReadonly && (
+              <p>No tracks found. {!isReadonly && "Add your first track!"}</p>
+              {!isReadonly && tracks.length === 0 && (
                 <div className="mt-4">
                   <FloatingAddButton onTrackAdded={handleTrackAdded} />
                 </div>
@@ -168,7 +173,7 @@ export function TrackList({ refreshTrigger, onTrackAdded }: TrackListProps) {
             </div>
           ) : (
             <div className="space-y-2">
-              {tracks.map((track) => (
+              {filteredTracks.map((track) => (
                 <div
                   key={track.id}
                   className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
