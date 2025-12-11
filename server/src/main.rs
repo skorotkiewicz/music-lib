@@ -19,6 +19,10 @@ struct Args {
     
     #[arg(long, default_value = "./hls_cache")]
     cache_path: PathBuf,
+    
+    /// Enable readonly mode - disables adding and removing tracks
+    #[arg(long, default_value = "false")]
+    readonly: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -441,9 +445,15 @@ async fn main() {
     let hls_cache: HlsCache = Arc::new(Mutex::new(initial_cache));
     let download_queue: DownloadQueue = Arc::new(RwLock::new(HashMap::new()));
     
+    let readonly_mode = args.readonly;
+    
     println!("🎵 Starting HLS music server on port {}", args.port);
     println!("🗄️ HLS cache directory: {}", cache_dir.display());
-    println!("🔗 URL downloads enabled with yt-dlp");
+    if readonly_mode {
+        println!("� Running in READONLY mode - adding/removing tracks disabled");
+    } else {
+        println!("�🔗 URL downloads enabled with yt-dlp");
+    }
     
     let cors = warp::cors()
         .allow_any_origin()
@@ -629,15 +639,39 @@ async fn main() {
             }
         });
     
-    let routes = tracks_route
-        .or(delete_track_route)
-        .or(hls_playlist_route)
-        .or(hls_segment_route)
-        .or(download_route)
-        .or(download_status_route)
-        .with(cors);
+    // Mode endpoint - returns current mode (readonly/readwrite)
+    let mode_route = warp::path("api")
+        .and(warp::path("mode"))
+        .and(warp::path::end())
+        .and(warp::get())
+        .map(move || {
+            warp::reply::json(&serde_json::json!({
+                "readonly": readonly_mode,
+                "mode": if readonly_mode { "readonly" } else { "readwrite" }
+            }))
+        });
     
-    warp::serve(routes)
-        .run(([0, 0, 0, 0], args.port))
-        .await;
+    // Build routes based on mode
+    let base_routes = tracks_route
+        .or(mode_route)
+        .or(hls_playlist_route)
+        .or(hls_segment_route);
+    
+    if readonly_mode {
+        // Readonly mode - only allow reading tracks and streaming
+        let routes = base_routes.with(cors);
+        warp::serve(routes)
+            .run(([0, 0, 0, 0], args.port))
+            .await;
+    } else {
+        // Readwrite mode - allow all operations
+        let routes = base_routes
+            .or(delete_track_route)
+            .or(download_route)
+            .or(download_status_route)
+            .with(cors);
+        warp::serve(routes)
+            .run(([0, 0, 0, 0], args.port))
+            .await;
+    }
 }
