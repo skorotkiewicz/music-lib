@@ -167,7 +167,11 @@ export function TrackList({ refreshTrigger, onTrackAdded, searchQuery = "" }: Tr
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Music className="h-5 w-5" />
-            Your Music Library ({filteredTracks.length} tracks)
+            Your Music Library (
+            {searchQuery.trim()
+              ? `${filteredTracks.length} from ${tracks.length} tracks`
+              : `${tracks.length} tracks`}
+            )
             {isReadonly && (
               <span className="ml-2 text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">RO</span>
             )}
