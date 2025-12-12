@@ -57,6 +57,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ### 1. Install Frontend Dependencies
 
 ```bash
+cd client
 bun install
 ```
 
@@ -65,7 +66,6 @@ bun install
 ```bash
 cd server
 cargo build --release
-cd ..
 ```
 
 ### 3. Start the Servers
@@ -77,6 +77,7 @@ cd ..
 
 **Terminal 2 - React Frontend:**
 ```bash
+cd client
 bun dev
 ```
 
@@ -114,20 +115,25 @@ Navigate to [http://localhost:5173](http://localhost:5173)
 
 ```
 music-lib/
-├── src/                    # React frontend
-│   ├── components/         # UI components
-│   │   ├── BottomPlayer.tsx   # Music player controls
-│   │   ├── FloatingAddButton.tsx # Add track dialog
-│   │   └── TrackList.tsx      # Track listing
-│   ├── contexts/           # React contexts
-│   │   └── PlayerContext.tsx  # Player state management
-│   └── App.tsx             # Main app component
+├── client/                 # React frontend (Vite)
+│   ├── src/
+│   │   ├── components/     # UI components
+│   │   │   ├── BottomPlayer.tsx
+│   │   │   ├── FloatingAddButton.tsx
+│   │   │   └── TrackList.tsx
+│   │   ├── contexts/       # React contexts
+│   │   │   └── PlayerContext.tsx
+│   │   ├── App.tsx         # Main app component
+│   │   └── main.tsx        # Entry point
+│   ├── public/             # Static assets
+│   ├── index.html
+│   ├── vite.config.ts
+│   └── package.json
 ├── server/                 # Rust backend
 │   ├── src/
 │   │   └── main.rs         # Server implementation
-│   └── Cargo.toml          # Rust dependencies
-├── hls_cache/              # HLS segments cache (gitignored)
-└── package.json            # Frontend dependencies
+│   └── Cargo.toml
+└── hls_cache/              # HLS segments cache (gitignored)
 ```
 
 ## 🔌 API Endpoints
@@ -155,6 +161,7 @@ curl -X POST http://localhost:8080/api/download \
 ### Frontend Hot Reload
 
 ```bash
+cd client
 bun dev
 ```
 
