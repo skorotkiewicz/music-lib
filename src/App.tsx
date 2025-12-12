@@ -67,9 +67,9 @@ function AppContent() {
         />
 
         {/* Footer */}
-        <div className="text-center mt-12 text-gray-500">
-          <p>Built with React, BunJS, and react-howler</p>
-        </div>
+        {/* <div className="text-center mt-12 text-gray-500">
+          <p></p>
+        </div> */}
       </div>
 
       {/* Bottom Player */}
