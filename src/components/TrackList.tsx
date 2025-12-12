@@ -1,5 +1,5 @@
 import { Loader2, Music, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePlayer } from "../contexts/PlayerContext";
@@ -38,8 +38,9 @@ export function TrackList({ refreshTrigger, onTrackAdded, searchQuery = "" }: Tr
   const [isReadonly, setIsReadonly] = useState(false);
   const { currentTrack, playTrack, setTracks: setGlobalTracks } = usePlayer();
 
-  const filteredTracks = tracks.filter((track) =>
-    track.title.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredTracks = useMemo(
+    () => tracks.filter((track) => track.title.toLowerCase().includes(searchQuery.toLowerCase())),
+    [tracks, searchQuery],
   );
 
   // Fetch mode from server
@@ -91,6 +92,16 @@ export function TrackList({ refreshTrigger, onTrackAdded, searchQuery = "" }: Tr
     fetchMode();
     fetchTracks();
   }, [fetchMode, fetchTracks, refreshTrigger]);
+
+  // Update global tracks based on search filter
+  // When searching, only filtered tracks are in the playlist for next/previous navigation
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      setGlobalTracks(filteredTracks);
+    } else {
+      setGlobalTracks(tracks);
+    }
+  }, [searchQuery, filteredTracks, tracks, setGlobalTracks]);
 
   const handleDeleteTrack = async (trackId: string) => {
     if (isReadonly) return;
