@@ -188,7 +188,7 @@ export function BottomPlayer({
   useEffect(() => {
     if (useHls) return; // Skip for HLS tracks
 
-    let interval: NodeJS.Timeout | null = null;
+    let interval: number | null = null;
 
     if (isPlaying && playerRef.current) {
       interval = setInterval(() => {

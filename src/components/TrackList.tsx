@@ -2,10 +2,10 @@ import { Loader2, Music, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { usePlayer } from "../contexts/PlayerContext";
+import { usePlayer } from "@/contexts/PlayerContext";
 import { FloatingAddButton } from "./FloatingAddButton";
 
-const API_BASE = "http://localhost:8080";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080";
 
 interface Track {
   id: string;

@@ -21,8 +21,8 @@ A modern HLS music streaming application with URL-based audio downloading. Paste
 ```
 ┌─────────────────┐         ┌─────────────────┐
 │  React Frontend │ ◄─────► │   Rust Server   │
-│   (Bun + Vite)  │  HTTP   │    (Warp)       │
-│   Port 3000     │         │   Port 8080     │
+│   (Vite)        │  HTTP   │    (Warp)       │
+│   Port 5173     │         │   Port 8080     │
 └─────────────────┘         └─────────────────┘
                                     │
                             ┌───────┴───────┐
@@ -82,7 +82,7 @@ bun dev
 
 ### 4. Open the App
 
-Navigate to [http://localhost:3000](http://localhost:3000)
+Navigate to [http://localhost:5173](http://localhost:5173)
 
 ## 🎛️ Server Options
 
@@ -121,8 +121,7 @@ music-lib/
 │   │   └── TrackList.tsx      # Track listing
 │   ├── contexts/           # React contexts
 │   │   └── PlayerContext.tsx  # Player state management
-│   ├── App.tsx             # Main app component
-│   └── index.tsx           # Bun server entry
+│   └── App.tsx             # Main app component
 ├── server/                 # Rust backend
 │   ├── src/
 │   │   └── main.rs         # Server implementation
@@ -177,11 +176,11 @@ cargo build --release
 
 ## 📝 Environment
 
-Create a `.env` file (optional):
+Create a `.env` file:
 
 ```env
-# Server configuration is done via command line args
-# See: ./server/target/release/music-server --help
+# API server URL (required for frontend)
+VITE_API_BASE=http://localhost:8080
 ```
 
 ## 🎨 Tech Stack
@@ -189,6 +188,7 @@ Create a `.env` file (optional):
 **Frontend:**
 - React 19
 - TypeScript
+- Vite
 - Tailwind CSS
 - hls.js (HLS playback)
 - Howler.js (audio fallback)

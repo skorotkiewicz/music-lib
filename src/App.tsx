@@ -1,10 +1,9 @@
 import { Music, Search } from "lucide-react";
 import { useState } from "react";
+import { BottomPlayer } from "@/components/BottomPlayer";
+import { TrackList } from "@/components/TrackList";
 import { Input } from "@/components/ui/input";
-// import { AddTrackModal } from "./components/AddTrackModal";
-import { BottomPlayer } from "./components/BottomPlayer";
-import { TrackList } from "./components/TrackList";
-import { PlayerProvider, usePlayer } from "./contexts/PlayerContext";
+import { PlayerProvider, usePlayer } from "@/contexts/PlayerContext";
 import "./index.css";
 
 function AppContent() {
@@ -38,7 +37,7 @@ function AppContent() {
         <div className="text-center mb-8">
           <div className="flex justify-center items-center gap-4 mb-4">
             <Music className="h-12 w-12 text-blue-600" />
-            <h1 className="text-4xl font-bold text-gray-800">Music Player</h1>
+            <h1 className="text-4xl font-bold text-gray-800">Music Library</h1>
           </div>
           <p className="text-lg text-gray-600">Add your music tracks and enjoy listening!</p>
         </div>
