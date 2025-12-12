@@ -29,10 +29,12 @@ struct Args {
 struct HlsSession {
     id: String,
     title: String,
+    origin_url: String,
     segments_dir: PathBuf,
     playlist_path: PathBuf,
     total_segments: u32,
     segment_duration: f32,
+    listen_count: u64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -40,10 +42,14 @@ struct HlsCacheEntry {
     file_hash: String,
     session_id: String,
     title: String,
+    #[serde(default)]
+    origin_url: String,
     segments_dir: String,
     playlist_path: String,
     total_segments: u32,
     segment_duration: f32,
+    #[serde(default)]
+    listen_count: u64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -84,6 +90,7 @@ struct TrackInfo {
     session_id: String,
     total_segments: u32,
     segment_duration: f32,
+    listen_count: u64,
 }
 
 type HlsCache = Arc<Mutex<HashMap<String, HlsSession>>>;
@@ -122,10 +129,12 @@ async fn load_hls_cache(cache_dir: &Path) -> Result<HashMap<String, HlsSession>,
                                 let session = HlsSession {
                                     id: entry.session_id,
                                     title: entry.title,
+                                    origin_url: entry.origin_url,
                                     segments_dir,
                                     playlist_path,
                                     total_segments: entry.total_segments,
                                     segment_duration: entry.segment_duration,
+                                    listen_count: entry.listen_count,
                                 };
                                 cache_map.insert(entry.file_hash, session);
                             }
@@ -155,10 +164,12 @@ async fn save_hls_cache(cache_dir: &Path, cache: &HashMap<String, HlsSession>) -
             file_hash: file_hash.clone(),
             session_id: session.id.clone(),
             title: session.title.clone(),
+            origin_url: session.origin_url.clone(),
             segments_dir: session.segments_dir.to_string_lossy().to_string(),
             playlist_path: session.playlist_path.to_string_lossy().to_string(),
             total_segments: session.total_segments,
             segment_duration: session.segment_duration,
+            listen_count: session.listen_count,
         };
         entries.push(entry);
     }
@@ -175,6 +186,7 @@ async fn create_hls_segments(
     cache_dir: &Path,
     session_id: &str,
     title: &str,
+    origin_url: &str,
 ) -> Result<HlsSession, Box<dyn std::error::Error + Send + Sync>> {
     let segments_dir = cache_dir.join(session_id);
     create_dir_all(&segments_dir).await?;
@@ -208,10 +220,12 @@ async fn create_hls_segments(
     Ok(HlsSession {
         id: session_id.to_string(),
         title: title.to_string(),
+        origin_url: origin_url.to_string(),
         segments_dir,
         playlist_path,
         total_segments,
         segment_duration,
+        listen_count: 0,
     })
 }
 
@@ -223,6 +237,19 @@ async fn download_from_url(
     download_queue: DownloadQueue,
     download_id: &str,
 ) -> Result<DownloadResponse, Box<dyn std::error::Error + Send + Sync>> {
+    // Check if this URL already exists in cache
+    {
+        let cache = hls_cache.lock().unwrap();
+        for session in cache.values() {
+            if session.origin_url == url {
+                return Err(format!(
+                    "This song is already downloaded: \"{}\"",
+                    session.title
+                ).into());
+            }
+        }
+    }
+    
     let session_id = Uuid::new_v4().to_string();
     let download_dir = cache_dir.join(&session_id);
     create_dir_all(&download_dir).await?;
@@ -288,7 +315,7 @@ async fn download_from_url(
     }
     
     // Create HLS segments
-    let session = create_hls_segments(&actual_file, cache_dir, &session_id, &track_title).await?;
+    let session = create_hls_segments(&actual_file, cache_dir, &session_id, &track_title, url).await?;
     
     // Delete the downloaded mp3 file after conversion
     if let Err(e) = remove_file(&actual_file).await {
@@ -335,7 +362,34 @@ async fn download_from_url(
 async fn serve_hls_playlist(
     hls_cache: HlsCache,
     session_id: String,
+    cache_dir: &Path,
 ) -> Result<impl warp::Reply, warp::Rejection> {
+    // Find the file_hash for this session and increment listen count
+    let file_hash_to_update = {
+        let cache = hls_cache.lock().unwrap();
+        cache.iter()
+            .find(|(_, s)| s.id == session_id)
+            .map(|(hash, _)| hash.clone())
+    };
+    
+    if let Some(hash) = file_hash_to_update {
+        {
+            let mut cache = hls_cache.lock().unwrap();
+            if let Some(session) = cache.get_mut(&hash) {
+                session.listen_count += 1;
+            }
+        }
+        
+        // Save cache to disk
+        let cache_data = {
+            let cache = hls_cache.lock().unwrap();
+            cache.clone()
+        };
+        if let Err(e) = save_hls_cache(cache_dir, &cache_data).await {
+            eprintln!("Warning: Failed to save HLS cache: {}", e);
+        }
+    }
+    
     let session = {
         let cache = hls_cache.lock().unwrap();
         cache.values().find(|s| s.id == session_id).cloned()
@@ -393,9 +447,9 @@ async fn serve_hls_segment(
 struct Forbidden;
 impl warp::reject::Reject for Forbidden {}
 
-#[derive(Debug)]
-struct ServerError;
-impl warp::reject::Reject for ServerError {}
+// #[derive(Debug)]
+// struct ServerError;
+// impl warp::reject::Reject for ServerError {}
 
 #[tokio::main]
 async fn main() {
@@ -479,6 +533,7 @@ async fn main() {
                             session_id: session.id.clone(),
                             total_segments: session.total_segments,
                             segment_duration: session.segment_duration,
+                            listen_count: session.listen_count,
                         }
                     }).collect();
                     
@@ -494,10 +549,12 @@ async fn main() {
         .and(warp::get())
         .and_then({
             let hls_cache = Arc::clone(&hls_cache);
+            let cache_dir = Arc::clone(&cache_dir);
             move |session_id: String| {
                 let hls_cache = Arc::clone(&hls_cache);
+                let cache_dir = Arc::clone(&cache_dir);
                 async move {
-                    serve_hls_playlist(hls_cache, session_id).await
+                    serve_hls_playlist(hls_cache, session_id, &cache_dir).await
                 }
             }
         });
@@ -554,17 +611,34 @@ async fn main() {
                         &download_id,
                     ).await {
                         Ok(response) => {
-                            Ok::<_, warp::Rejection>(warp::reply::json(&response))
+                            Ok::<_, warp::Rejection>(warp::reply::with_status(
+                                warp::reply::json(&response),
+                                warp::http::StatusCode::OK,
+                            ))
                         }
                         Err(e) => {
+                            let error_msg = e.to_string();
                             {
                                 let mut queue = download_queue.write().await;
                                 if let Some(status) = queue.get_mut(&download_id) {
                                     status.status = "error".to_string();
-                                    status.error = Some(e.to_string());
+                                    status.error = Some(error_msg.clone());
                                 }
                             }
-                            Err(warp::reject::custom(ServerError))
+                            
+                            // Check if it's a duplicate error
+                            let status_code = if error_msg.contains("already downloaded") {
+                                warp::http::StatusCode::CONFLICT // 409
+                            } else {
+                                warp::http::StatusCode::INTERNAL_SERVER_ERROR // 500
+                            };
+                            
+                            Ok(warp::reply::with_status(
+                                warp::reply::json(&serde_json::json!({
+                                    "error": error_msg
+                                })),
+                                status_code,
+                            ))
                         }
                     }
                 }

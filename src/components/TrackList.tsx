@@ -12,6 +12,7 @@ interface Track {
   url: string;
   title: string;
   addedAt?: string;
+  listenCount?: number;
 }
 
 interface ApiTrack {
@@ -21,6 +22,7 @@ interface ApiTrack {
   session_id: string;
   total_segments: number;
   segment_duration: number;
+  listen_count: number;
 }
 
 interface TrackListProps {
@@ -73,6 +75,7 @@ export function TrackList({ refreshTrigger, onTrackAdded, searchQuery = "" }: Tr
         title: apiTrack.title,
         url: `${API_BASE}${apiTrack.url}`,
         addedAt: new Date().toISOString(),
+        listenCount: apiTrack.listen_count,
       }));
 
       setTracks(transformedTracks);
@@ -189,7 +192,17 @@ export function TrackList({ refreshTrigger, onTrackAdded, searchQuery = "" }: Tr
                       className="text-left w-full"
                     >
                       <h3 className="font-medium truncate">{track.title}</h3>
-                      <p className="text-xs text-gray-400">HLS Stream</p>
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <span>HLS Stream</span>
+                        {(track.listenCount ?? 0) > 0 && (
+                          <span className="flex items-center gap-1">
+                            <span>•</span>
+                            <span>
+                              {track.listenCount} {track.listenCount === 1 ? "play" : "plays"}
+                            </span>
+                          </span>
+                        )}
+                      </div>
                     </button>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
