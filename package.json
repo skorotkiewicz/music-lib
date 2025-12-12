@@ -1,0 +1,21 @@
+{
+  "name": "music-lib",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "start": "concurrently \"npm run start:server\" \"npm run start:client\"",
+    "dev:client": "cd client && bun dev",
+    "start:client": "cd client && bun preview",
+    "build:client": "cd client && bun run build",
+    "dev:server": "./server/target/debug/music-server",
+    "start:server": "./server/target/release/music-server",
+    "build:server": "cd server && cargo build --release",
+    "build:server:debug": "cd server && cargo build",
+    "build": "npm run build:server && npm run build:client"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.8",
+    "concurrently": "^9.1.2"
+  }
+}
