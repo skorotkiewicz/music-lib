@@ -418,8 +418,8 @@ export function Player({
         {/* Player Controls */}
         <div className="flex items-center justify-between px-4 py-3">
           {/* Track Info */}
-          <div className="flex items-center min-w-0 flex-1">
-            <div className="min-w-0 flex-1">
+          <div className="flex items-center min-w-0 flex-1 h-12">
+            <div className="min-w-0 flex-1 flex flex-col justify-center">
               <h3 className="font-medium text-sm truncate">{currentTrack.title}</h3>
               {sleepRemaining > 0 && (
                 <div className="flex items-center gap-1 text-xs text-purple-400">
