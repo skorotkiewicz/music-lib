@@ -56,7 +56,26 @@ brew install ffmpeg yt-dlp
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-## 🚀 Quick Start
+## 🐳 Docker (Recommended)
+
+The easiest way to run the application:
+
+```bash
+# Build and start
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop
+docker-compose down
+```
+
+The `hls_cache` directory will be created on your host for persistent storage.
+
+Access the app at **http://localhost:8080**
+
+## 🚀 Quick Start (Manual)
 
 ### 1. Install Frontend Dependencies
 
