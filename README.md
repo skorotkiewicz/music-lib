@@ -35,7 +35,7 @@ A modern HLS music streaming application with URL-based audio downloading. Paste
                             └───────────────┘
 ```
 
-## � Prerequisites
+## Prerequisites
 
 - [Bun](https://bun.sh/) - JavaScript runtime
 - [Rust](https://rustup.rs/) - For the backend server
