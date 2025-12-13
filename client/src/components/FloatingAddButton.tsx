@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { API_BASE } from "@/lib/utils";
 
 interface Track {
   id: string;
@@ -48,7 +49,7 @@ export function FloatingAddButton({ onTrackAdded }: FloatingAddButtonProps) {
 
     try {
       // Call the Rust server's download endpoint
-      const response = await fetch("http://localhost:8080/api/download", {
+      const response = await fetch(`${API_BASE}/api/download`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -68,7 +69,7 @@ export function FloatingAddButton({ onTrackAdded }: FloatingAddButtonProps) {
       // Create a track object from the download response
       const newTrack: Track = {
         id: data.id,
-        url: `http://localhost:8080${data.playlist_url}`,
+        url: API_BASE + data.playlist_url,
         title: data.title,
         addedAt: new Date().toISOString(),
       };

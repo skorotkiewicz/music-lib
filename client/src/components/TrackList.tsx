@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePlayer } from "@/contexts/PlayerContext";
 import { FloatingAddButton } from "./FloatingAddButton";
-
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080";
+import { API_BASE } from "@/lib/utils";
 
 interface Track {
   id: string;

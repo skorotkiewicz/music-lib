@@ -500,9 +500,9 @@ async fn main() {
     println!("🎵 Starting HLS music server on port {}", args.port);
     println!("🗄️ HLS cache directory: {}", cache_dir.display());
     if readonly_mode {
-        println!("� Running in READONLY mode - adding/removing tracks disabled");
+        println!("Running in READONLY mode - adding/removing tracks disabled");
     } else {
-        println!("�🔗 URL downloads enabled with yt-dlp");
+        println!("🔗 URL downloads enabled with yt-dlp");
     }
     
     let cors = warp::cors()
