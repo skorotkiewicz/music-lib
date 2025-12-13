@@ -1,6 +1,6 @@
 import { Music, Search } from "lucide-react";
 import { useState } from "react";
-import { BottomPlayer } from "@/components/BottomPlayer";
+import { Player } from "@/components/Player";
 import { TrackList } from "@/components/TrackList";
 import { Input } from "@/components/ui/input";
 import { PlayerProvider, usePlayer } from "@/contexts/PlayerContext";
@@ -71,8 +71,8 @@ function AppContent() {
         </div> */}
       </div>
 
-      {/* Bottom Player */}
-      <BottomPlayer
+      {/* Player */}
+      <Player
         currentTrack={currentTrack}
         isPlaying={isPlaying}
         onPlayPause={togglePlayPause}

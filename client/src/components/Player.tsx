@@ -10,7 +10,6 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import ReactHowler from "react-howler";
 import { Button } from "@/components/ui/button";
 
 interface Track {
@@ -20,7 +19,7 @@ interface Track {
   addedAt?: string;
 }
 
-interface BottomPlayerProps {
+interface PlayerProps {
   currentTrack: Track | null;
   isPlaying: boolean;
   onPlayPause: () => void;
@@ -37,12 +36,7 @@ interface BottomPlayerProps {
   onToggleRepeat: () => void;
 }
 
-// Helper to detect if URL is an HLS playlist
-function isHlsUrl(url: string): boolean {
-  return url.includes(".m3u8") || url.includes("/playlist.m3u8");
-}
-
-export function BottomPlayer({
+export function Player({
   currentTrack,
   isPlaying,
   onPlayPause,
@@ -57,41 +51,24 @@ export function BottomPlayer({
   onMuteToggle,
   repeatMode,
   onToggleRepeat,
-}: BottomPlayerProps) {
+}: PlayerProps) {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
-  const [useHls, setUseHls] = useState(false);
 
-  // Refs for both Howler and HLS audio
-  const playerRef = useRef<ReactHowler>(null);
+  // Refs for HLS audio
   const audioRef = useRef<HTMLAudioElement>(null);
   const hlsRef = useRef<Hls | null>(null);
-
-  // Detect if current track is HLS
-  useEffect(() => {
-    if (currentTrack) {
-      setUseHls(isHlsUrl(currentTrack.url));
-    }
-  }, [currentTrack?.url]);
 
   // Reset current time when track changes
   useEffect(() => {
     setCurrentTime(0);
     setDuration(0);
-
-    // For Howler tracks
-    if (!useHls && playerRef.current) {
-      const dur = playerRef.current.duration();
-      if (typeof dur === "number" && dur > 0) {
-        setDuration(dur);
-      }
-    }
-  }, [currentTrack?.id, useHls]);
+  }, [currentTrack?.id]);
 
   // HLS Setup
   useEffect(() => {
-    if (!currentTrack || !useHls || !audioRef.current) return;
+    if (!currentTrack || !audioRef.current) return;
 
     // Clean up existing HLS instance
     if (hlsRef.current) {
@@ -138,11 +115,11 @@ export function BottomPlayer({
         hlsRef.current = null;
       }
     };
-  }, [currentTrack?.url, useHls]);
+  }, [currentTrack?.url]);
 
-  // Handle play/pause for HLS
+  // Handle play/pause
   useEffect(() => {
-    if (!useHls || !audioRef.current) return;
+    if (!audioRef.current) return;
 
     const audio = audioRef.current;
     if (isPlaying) {
@@ -152,17 +129,17 @@ export function BottomPlayer({
     } else {
       audio.pause();
     }
-  }, [isPlaying, useHls]);
+  }, [isPlaying]);
 
-  // Handle volume for HLS
+  // Handle volume
   useEffect(() => {
-    if (!useHls || !audioRef.current) return;
+    if (!audioRef.current) return;
     audioRef.current.volume = isMuted ? 0 : volume;
-  }, [volume, isMuted, useHls]);
+  }, [volume, isMuted]);
 
-  // Update time for HLS audio
+  // Update time for audio
   useEffect(() => {
-    if (!useHls || !audioRef.current) return;
+    if (!audioRef.current) return;
 
     const audio = audioRef.current;
 
@@ -182,65 +159,12 @@ export function BottomPlayer({
       audio.removeEventListener("loadedmetadata", updateDuration);
       audio.removeEventListener("durationchange", updateDuration);
     };
-  }, [currentTrack?.url, useHls]);
-
-  // Update current time more frequently for smoother progress bar (Howler)
-  useEffect(() => {
-    if (useHls) return; // Skip for HLS tracks
-
-    let interval: number | null = null;
-
-    if (isPlaying && playerRef.current) {
-      interval = setInterval(() => {
-        if (playerRef.current) {
-          const time = playerRef.current.seek();
-          if (typeof time === "number") {
-            setCurrentTime(time);
-          }
-        }
-      }, 100);
-    }
-
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [isPlaying, currentTrack?.id, useHls]);
-
-  const handleLoad = () => {
-    if (playerRef.current) {
-      const dur = playerRef.current.duration();
-      if (typeof dur === "number" && dur > 0) {
-        setDuration(dur);
-      }
-    }
-  };
-
-  const handlePlay = () => {
-    if (playerRef.current) {
-      const time = playerRef.current.seek();
-      if (typeof time === "number") {
-        setCurrentTime(time);
-      }
-    }
-  };
-
-  const handlePause = () => {
-    if (playerRef.current) {
-      const time = playerRef.current.seek();
-      if (typeof time === "number") {
-        setCurrentTime(time);
-      }
-    }
-  };
+  }, [currentTrack?.url]);
 
   const handleSeek = (newTime: number) => {
     setCurrentTime(newTime);
-    if (useHls && audioRef.current) {
+    if (audioRef.current) {
       audioRef.current.currentTime = newTime;
-    } else if (playerRef.current) {
-      playerRef.current.seek(newTime);
     }
   };
 
@@ -276,7 +200,7 @@ export function BottomPlayer({
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleHlsEnded = () => {
+  const handleEnded = () => {
     setCurrentTime(0);
     if (repeatMode === "one") {
       if (audioRef.current) {
@@ -299,46 +223,9 @@ export function BottomPlayer({
 
   return (
     <>
-      {/* Audio Player - Howler for regular files */}
-      {!useHls && (
-        <ReactHowler
-          ref={playerRef}
-          src={currentTrack.url}
-          playing={isPlaying}
-          volume={isMuted ? 0 : volume}
-          onLoad={handleLoad}
-          onPlay={handlePlay}
-          onPause={handlePause}
-          onEnd={() => {
-            setCurrentTime(0); // Reset UI time
-            if (repeatMode === "one") {
-              // Replay standard audio
-              if (playerRef.current) {
-                playerRef.current.seek(0);
-                // Note: ReactHowler should stay playing if 'playing' prop is true.
-                // However, sometimes Howler internal state needs a kick if it thinks it ended.
-                // But usually seek(0) is enough if loop is false.
-                // We could also force a small timeout to ensure state update?
-                // Or we can rely on ReactHowler's behavior.
-                // If it doesn't auto-resume, we might need to toggle playing.
-                // But typically seek(0) in onEnd while playing=true works for simple loops if handled manually.
-              }
-              return;
-            }
-
-            if (onAutoNext) {
-              onAutoNext();
-            } else if (onNext && hasNext) {
-              onNext();
-            }
-          }}
-          html5={true}
-        />
-      )}
-
-      {/* Audio element for HLS streams - biome-ignore for no captions on audio */}
+      {/* Audio element for HLS streams */}
       {/* biome-ignore lint/a11y/useMediaCaption: Audio-only HLS stream */}
-      <audio ref={audioRef} style={{ display: "none" }} onEnded={handleHlsEnded} />
+      <audio ref={audioRef} style={{ display: "none" }} onEnded={handleEnded} />
 
       {/* Bottom Player Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-gray-900 text-white border-t border-gray-700">
@@ -383,9 +270,7 @@ export function BottomPlayer({
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="font-medium text-sm truncate">{currentTrack.title}</h3>
-              <p className="text-xs text-gray-400 truncate">
-                {useHls ? "HLS Stream" : "Music Player"}
-              </p>
+              <p className="text-xs text-gray-400 truncate">HLS Stream</p>
             </div>
           </div>
 

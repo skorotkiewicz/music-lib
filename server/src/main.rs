@@ -447,10 +447,6 @@ async fn serve_hls_segment(
 struct Forbidden;
 impl warp::reject::Reject for Forbidden {}
 
-// #[derive(Debug)]
-// struct ServerError;
-// impl warp::reject::Reject for ServerError {}
-
 #[tokio::main]
 async fn main() {
     let args = Args::parse();

@@ -118,7 +118,7 @@ music-lib/
 ├── client/                 # React frontend (Vite)
 │   ├── src/
 │   │   ├── components/     # UI components
-│   │   │   ├── BottomPlayer.tsx
+│   │   │   ├── Player.tsx
 │   │   │   ├── FloatingAddButton.tsx
 │   │   │   └── TrackList.tsx
 │   │   ├── contexts/       # React contexts
@@ -198,7 +198,6 @@ VITE_API_BASE=http://localhost:8080
 - Vite
 - Tailwind CSS
 - hls.js (HLS playback)
-- Howler.js (audio fallback)
 - Radix UI (components)
 - Lucide (icons)
 
