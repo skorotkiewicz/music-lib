@@ -207,16 +207,11 @@ export function TrackList({ refreshTrigger, onTrackAdded, searchQuery = "" }: Tr
                       className="text-left w-full"
                     >
                       <h3 className="font-medium truncate">{track.title}</h3>
-                      <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <span>HLS Stream</span>
-                        {(track.listenCount ?? 0) > 0 && (
-                          <span className="flex items-center gap-1">
-                            <span>•</span>
-                            <span>
-                              {track.listenCount} {track.listenCount === 1 ? "play" : "plays"}
-                            </span>
-                          </span>
-                        )}
+                      <div className={`text-xs ${(track.listenCount ?? 0) > 0 ? "text-gray-400" : "text-transparent"}`}>
+                        {(track.listenCount ?? 0) > 0 
+                          ? `${track.listenCount} ${track.listenCount === 1 ? "play" : "plays"}`
+                          : "0 plays"
+                        }
                       </div>
                     </button>
                   </div>

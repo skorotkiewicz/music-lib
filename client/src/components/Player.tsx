@@ -1,15 +1,18 @@
 import Hls from "hls.js";
 import {
+  Moon,
   Pause,
   Play,
   Repeat,
   Repeat1,
+  Shuffle,
   SkipBack,
   SkipForward,
+  Volume1,
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 interface Track {
@@ -18,6 +21,18 @@ interface Track {
   title: string;
   addedAt?: string;
 }
+
+// Sleep timer options in minutes (0 = off)
+const SLEEP_OPTIONS = [0, 15, 30, 60, 120] as const;
+type SleepDuration = (typeof SLEEP_OPTIONS)[number];
+
+const SLEEP_LABELS: Record<SleepDuration, string> = {
+  0: "Off",
+  15: "15m",
+  30: "30m",
+  60: "1h",
+  120: "2h",
+};
 
 interface PlayerProps {
   currentTrack: Track | null;
@@ -34,6 +49,8 @@ interface PlayerProps {
   onMuteToggle: () => void;
   repeatMode: "none" | "all" | "one";
   onToggleRepeat: () => void;
+  shuffleMode: boolean;
+  onToggleShuffle: () => void;
 }
 
 export function Player({
@@ -51,14 +68,147 @@ export function Player({
   onMuteToggle,
   repeatMode,
   onToggleRepeat,
+  shuffleMode,
+  onToggleShuffle,
 }: PlayerProps) {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+
+  // Sleep timer state
+  const [sleepDuration, setSleepDuration] = useState<SleepDuration>(0);
+  const [sleepRemaining, setSleepRemaining] = useState<number>(0); // in seconds
+  const [isFadingOut, setIsFadingOut] = useState(false);
+  const originalVolumeRef = useRef<number>(volume);
 
   // Refs for HLS audio
   const audioRef = useRef<HTMLAudioElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+
+  // Toggle sleep timer - cycles through options
+  const toggleSleepTimer = useCallback(() => {
+    const currentIndex = SLEEP_OPTIONS.indexOf(sleepDuration);
+    const nextIndex = (currentIndex + 1) % SLEEP_OPTIONS.length;
+    const nextDuration = SLEEP_OPTIONS[nextIndex];
+
+    setSleepDuration(nextDuration);
+    setSleepRemaining(nextDuration * 60); // Convert to seconds
+    setIsFadingOut(false);
+
+    // Store current volume when setting a timer
+    if (nextDuration > 0) {
+      originalVolumeRef.current = volume;
+    }
+  }, [sleepDuration, volume]);
+
+  // Sleep timer countdown effect
+  useEffect(() => {
+    if (sleepRemaining <= 0 || !isPlaying) return;
+
+    const interval = setInterval(() => {
+      setSleepRemaining((prev) => {
+        if (prev <= 1) {
+          // Timer ended - stop playback
+          onPlayPause();
+          setSleepDuration(0);
+          setIsFadingOut(false);
+          // Restore original volume
+          onVolumeChange(originalVolumeRef.current);
+          return 0;
+        }
+
+        // Start fade out in the last 30 seconds
+        if (prev <= 30 && !isFadingOut) {
+          setIsFadingOut(true);
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [sleepRemaining, isPlaying, onPlayPause, isFadingOut, onVolumeChange]);
+
+  // Volume fade out effect
+  useEffect(() => {
+    if (!isFadingOut || sleepRemaining <= 0) return;
+
+    // Gradually reduce volume over the last 30 seconds
+    const fadeProgress = sleepRemaining / 30; // 1.0 -> 0.0
+    const fadedVolume = originalVolumeRef.current * fadeProgress;
+    onVolumeChange(Math.max(0, fadedVolume));
+  }, [isFadingOut, sleepRemaining, onVolumeChange]);
+
+  // Format sleep remaining time
+  const formatSleepRemaining = (seconds: number): string => {
+    if (seconds <= 0) return "";
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins >= 60) {
+      const hrs = Math.floor(mins / 60);
+      const remainMins = mins % 60;
+      return `${hrs}h ${remainMins}m`;
+    }
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in inputs
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      switch (e.code) {
+        case "Space":
+          e.preventDefault();
+          onPlayPause();
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          if (onPrevious && hasPrevious) onPrevious();
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          if (onNext && hasNext) onNext();
+          break;
+        case "KeyM":
+          e.preventDefault();
+          onMuteToggle();
+          break;
+        case "KeyS":
+          e.preventDefault();
+          onToggleShuffle();
+          break;
+        case "KeyR":
+          e.preventDefault();
+          onToggleRepeat();
+          break;
+        case "KeyT":
+          e.preventDefault();
+          toggleSleepTimer();
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    onPlayPause,
+    onNext,
+    onPrevious,
+    hasNext,
+    hasPrevious,
+    onMuteToggle,
+    onToggleShuffle,
+    onToggleRepeat,
+    toggleSleepTimer,
+  ]);
 
   // Reset current time when track changes
   useEffect(() => {
@@ -131,11 +281,17 @@ export function Player({
     }
   }, [isPlaying]);
 
-  // Handle volume
+  // Handle volume (but not when fading - that's handled separately)
   useEffect(() => {
-    if (!audioRef.current) return;
+    if (!audioRef.current || isFadingOut) return;
     audioRef.current.volume = isMuted ? 0 : volume;
-  }, [volume, isMuted]);
+  }, [volume, isMuted, isFadingOut]);
+
+  // Apply faded volume to audio element
+  useEffect(() => {
+    if (!audioRef.current || !isFadingOut) return;
+    audioRef.current.volume = isMuted ? 0 : volume;
+  }, [volume, isMuted, isFadingOut]);
 
   // Update time for audio
   useEffect(() => {
@@ -262,15 +418,15 @@ export function Player({
         {/* Player Controls */}
         <div className="flex items-center justify-between px-4 py-3">
           {/* Track Info */}
-          <div className="flex items-center space-x-3 min-w-0 flex-1">
-            <div className="w-12 h-12 bg-gray-700 rounded flex items-center justify-center">
-              <span className="text-xs font-semibold">
-                {currentTrack.title.charAt(0).toUpperCase()}
-              </span>
-            </div>
+          <div className="flex items-center min-w-0 flex-1">
             <div className="min-w-0 flex-1">
               <h3 className="font-medium text-sm truncate">{currentTrack.title}</h3>
-              <p className="text-xs text-gray-400 truncate">HLS Stream</p>
+              {sleepRemaining > 0 && (
+                <div className="flex items-center gap-1 text-xs text-purple-400">
+                  <Moon className="h-3 w-3" />
+                  {formatSleepRemaining(sleepRemaining)}
+                </div>
+              )}
             </div>
           </div>
 
@@ -279,12 +435,28 @@ export function Player({
             {/* Current Time */}
             <span className="text-xs text-gray-300 w-12 text-right">{formatTime(currentTime)}</span>
 
+            {/* Shuffle Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggleShuffle}
+              className={`hover:bg-gray-800 ${
+                shuffleMode
+                  ? "text-green-500 hover:text-green-400"
+                  : "text-gray-400 hover:text-white"
+              }`}
+              title={`Shuffle: ${shuffleMode ? "On" : "Off"} (S)`}
+            >
+              <Shuffle className="h-4 w-4" />
+            </Button>
+
             <Button
               variant="ghost"
               size="sm"
               onClick={onPrevious}
-              disabled={!hasPrevious}
+              disabled={!hasPrevious && !shuffleMode}
               className="text-white hover:bg-gray-800 hover:text-white"
+              title="Previous (←)"
             >
               <SkipBack className="h-4 w-4" />
             </Button>
@@ -292,6 +464,7 @@ export function Player({
             <Button
               onClick={onPlayPause}
               className="bg-white text-black hover:bg-gray-200 rounded-full w-8 h-8 p-0"
+              title="Play/Pause (Space)"
             >
               {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             </Button>
@@ -300,8 +473,9 @@ export function Player({
               variant="ghost"
               size="sm"
               onClick={onNext}
-              disabled={!hasNext}
+              disabled={!hasNext && !shuffleMode}
               className="text-white hover:bg-gray-800 hover:text-white"
+              title="Next (→)"
             >
               <SkipForward className="h-4 w-4" />
             </Button>
@@ -315,7 +489,7 @@ export function Player({
                   ? "text-green-500 hover:text-green-400"
                   : "text-gray-400 hover:text-white"
               }`}
-              title={`Repeat: ${repeatMode}`}
+              title={`Repeat: ${repeatMode} (R)`}
             >
               {repeatMode === "one" ? (
                 <Repeat1 className="h-4 w-4 text-green-500" />
@@ -324,34 +498,83 @@ export function Player({
               )}
             </Button>
 
+            {/* Sleep Timer Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleSleepTimer}
+              className={`hover:bg-gray-800 ${
+                sleepDuration > 0
+                  ? "text-purple-400 hover:text-purple-300"
+                  : "text-gray-400 hover:text-white"
+              }`}
+              title={`Sleep Timer: ${SLEEP_LABELS[sleepDuration]} (T)`}
+            >
+              <Moon className="h-4 w-4" />
+              {sleepDuration > 0 && (
+                <span className="ml-1 text-xs">{SLEEP_LABELS[sleepDuration]}</span>
+              )}
+            </Button>
+
             {/* Total Time */}
             <span className="text-xs text-gray-300 w-12 text-left">{formatTime(duration)}</span>
           </div>
 
           {/* Volume Control */}
-          <div className="flex items-center space-x-2 min-w-0 flex-1 justify-end">
+          <div className="relative flex items-center justify-end">
+            {/* Floating Volume Slider */}
+            {showVolumeSlider && (
+              <>
+                {/* Backdrop to close */}
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowVolumeSlider(false)}
+                />
+                {/* Slider popup */}
+                <div className="absolute bottom-full right-0 mb-2 p-3 bg-gray-800 rounded-lg shadow-lg z-50 flex flex-col items-center gap-2">
+                  <span className="text-xs text-gray-300">
+                    {Math.round((isMuted ? 0 : volume) * 100)}%
+                  </span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={isMuted ? 0 : volume}
+                    onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+                    className="h-24 w-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                    style={{
+                      writingMode: "vertical-lr",
+                      direction: "rtl",
+                    }}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onMuteToggle}
+                    className="text-white hover:bg-gray-700 hover:text-white p-1"
+                  >
+                    {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </>
+            )}
+            {/* Volume Button */}
             <Button
               variant="ghost"
               size="sm"
-              onClick={onMuteToggle}
+              onClick={() => setShowVolumeSlider(!showVolumeSlider)}
               className="text-white hover:bg-gray-800 hover:text-white"
+              title="Volume (M to mute)"
             >
-              {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              {isMuted ? (
+                <VolumeX className="h-4 w-4" />
+              ) : volume > 0.5 ? (
+                <Volume2 className="h-4 w-4" />
+              ) : (
+                <Volume1 className="h-4 w-4" />
+              )}
             </Button>
-            <div className="w-20">
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={isMuted ? 0 : volume}
-                onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
-                className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-              />
-            </div>
-            <span className="text-xs text-gray-400 w-8">
-              {Math.round((isMuted ? 0 : volume) * 100)}%
-            </span>
           </div>
         </div>
       </div>

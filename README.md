@@ -12,9 +12,13 @@ A modern HLS music streaming application with URL-based audio downloading. Paste
 - **🔗 URL Downloads** - Paste URLs from YouTube, SoundCloud, Bandcamp, and 1000+ sites
 - **📡 HLS Streaming** - Audio is converted to HLS format for efficient streaming
 - **🎵 Music Player** - Full-featured player with play/pause, seek, volume, next/previous
+- **🔀 Shuffle Mode** - Randomize track playback order
+- **🔁 Repeat Modes** - Repeat all, repeat one, or no repeat
+- **😴 Sleep Timer** - Auto-stop after 15m/30m/1h/2h with smooth volume fade-out
+- **⌨️ Keyboard Shortcuts** - Space, arrows, M, S, R, T for quick controls
 - **📱 Responsive UI** - Beautiful React frontend with modern design
 - **🔒 Readonly Mode** - Optional mode to disable adding/removing tracks
-- **💾 Persistent Cache** - Downloaded tracks are cached and survive restarts
+- **💾 Persistent Storage** - Downloaded tracks are stored on server
 
 ## 🏗️ Architecture
 
@@ -110,6 +114,18 @@ Navigate to [http://localhost:5173](http://localhost:5173)
 |------|------------|---------------|--------|
 | `readwrite` (default) | ✅ | ✅ | ✅ |
 | `readonly` | ❌ | ❌ | ✅ |
+
+## ⌨️ Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Space` | Play / Pause |
+| `←` | Previous track |
+| `→` | Next track |
+| `M` | Mute / Unmute |
+| `S` | Toggle shuffle |
+| `R` | Toggle repeat mode |
+| `T` | Toggle sleep timer |
 
 ## 📁 Project Structure
 

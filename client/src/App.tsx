@@ -24,6 +24,8 @@ function AppContent() {
     playPrevious,
     repeatMode,
     toggleRepeatMode,
+    shuffleMode,
+    toggleShuffleMode,
   } = usePlayer();
 
   const handleTrackAdded = () => {
@@ -81,16 +83,21 @@ function AppContent() {
         onPrevious={playPrevious}
         hasNext={
           tracks.length > 0 &&
-          (repeatMode === "all" ||
+          (shuffleMode ||
+            repeatMode === "all" ||
             (currentTrackIndex !== null && currentTrackIndex < tracks.length - 1))
         }
-        hasPrevious={currentTrackIndex !== null && currentTrackIndex > 0}
+        hasPrevious={
+          shuffleMode || (currentTrackIndex !== null && currentTrackIndex > 0)
+        }
         volume={volume}
         onVolumeChange={setVolume}
         isMuted={isMuted}
         onMuteToggle={toggleMute}
         repeatMode={repeatMode}
         onToggleRepeat={toggleRepeatMode}
+        shuffleMode={shuffleMode}
+        onToggleShuffle={toggleShuffleMode}
       />
     </div>
   );
