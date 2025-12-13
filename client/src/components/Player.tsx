@@ -431,7 +431,7 @@ export function Player({
           </div>
 
           {/* Center Controls */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center justify-center space-x-2">
             {/* Current Time */}
             <span className="text-xs text-gray-300 w-12 text-right">{formatTime(currentTime)}</span>
 
@@ -521,7 +521,7 @@ export function Player({
           </div>
 
           {/* Volume Control */}
-          <div className="relative flex items-center justify-end">
+          <div className="relative flex items-center justify-end flex-1">
             {/* Floating Volume Slider */}
             {showVolumeSlider && (
               <>
