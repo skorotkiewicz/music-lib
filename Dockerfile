@@ -14,7 +14,8 @@ RUN bun run build
 
 # Runtime
 FROM alpine:3.19
-RUN apk add --no-cache ffmpeg yt-dlp nginx ca-certificates
+RUN apk add --no-cache ffmpeg nginx ca-certificates curl python3
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && chmod +x /usr/local/bin/yt-dlp
 WORKDIR /app
 
 COPY --from=rust /build/target/release/music-server .
@@ -44,6 +45,8 @@ ENV READONLY=false
 RUN printf '%s\n' \
     '#!/bin/sh' \
     'echo "🎵 Starting Music Library..."' \
+    'echo "📦 Updating yt-dlp..."' \
+    'yt-dlp -U || true' \
     'if [ "$READONLY" = "true" ]; then' \
     '    ./music-server --port 3000 --cache-path /app/hls_cache --readonly &' \
     'else' \
