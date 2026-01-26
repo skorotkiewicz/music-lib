@@ -3,8 +3,8 @@
 A modern HLS music streaming application with URL-based audio downloading. Paste any YouTube, SoundCloud, or supported URL and stream your music library via HLS.
 
 <p align="center">
-  <img src="screenshot0.png" width="48%" />
-  <img src="screenshot1.png" width="48%" /> 
+  <img src="docs/screenshot0.png" width="48%" />
+  <img src="docs/screenshot1.png" width="48%" /> 
 </p>
 
 ## ✨ Features

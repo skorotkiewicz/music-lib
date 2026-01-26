@@ -30,6 +30,12 @@ RUN printf '%s\n' \
     '    listen 8080;' \
     '    root /usr/share/nginx/html;' \
     '    index index.html;' \
+    '    ' \
+    '    proxy_connect_timeout 1d;' \
+    '    proxy_send_timeout 1d;' \
+    '    proxy_read_timeout 1d;' \
+    '    send_timeout 1d;' \
+    '    ' \
     '    location / {' \
     '        try_files $uri $uri/ /index.html;' \
     '    }' \
