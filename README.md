@@ -57,6 +57,8 @@ docker-compose logs -f    # View logs
 docker-compose down       # Stop
 ```
 
+See [Server Options](docs/API.md#server-options) for more details.
+
 ---
 
 ## ⌨️ Keyboard Shortcuts
