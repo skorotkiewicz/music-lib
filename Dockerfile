@@ -15,6 +15,9 @@ RUN bun run build
 # Runtime
 FROM alpine:3.19
 RUN apk add --no-cache ffmpeg nginx ca-certificates curl python3
+RUN ln -sf python3 /usr/bin/python
+# Copy Bun from the build stage
+COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && chmod +x /usr/local/bin/yt-dlp
 WORKDIR /app
 
