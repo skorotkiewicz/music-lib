@@ -74,8 +74,7 @@ docker-compose down       # Stop
 
 ## 📁 Data
 
-The `hls_cache` directory will be created on your host for persistent storage.
-Your music is stored in `./hls_cache/`
+Your music is stored in the `./hls_cache/` directory, which will be created on your host for persistent storage.
 
 ---
 
