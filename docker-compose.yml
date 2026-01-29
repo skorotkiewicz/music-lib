@@ -1,12 +1,13 @@
 services:
   music-lib:
     build: .
-    image: music-lib:latest
+    image: skorotkiewicz/music-lib:latest
+    container_name: music-lib
     restart: unless-stopped
     ports:
       - "8080:8080"
     volumes:
       - ./hls_cache:/app/hls_cache
     environment:
-      # Set to "true" for readonly mode (no add/delete tracks)
+      # Set to "true" for readonly mode
       - READONLY=false
