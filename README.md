@@ -3,8 +3,8 @@
 A self-hosted music streaming app. Paste any YouTube, SoundCloud, or audio URL and build your personal library.
 
 <p align="center">
-  <img src="docs/screenshot0.png" width="48%" />
-  <img src="docs/screenshot1.png" width="48%" /> 
+  <img src="docs/screenshot_main.png" width="48%" />
+  <img src="docs/screenshot_add.png" width="48%" /> 
 </p>
 
 ## 🐳 Quick Start
