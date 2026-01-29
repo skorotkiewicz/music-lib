@@ -157,10 +157,7 @@ export function Player({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger shortcuts when typing in inputs
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      ) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
 
@@ -279,7 +276,53 @@ export function Player({
     } else {
       audio.pause();
     }
+
+    // Update Media Session playback state
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+    }
   }, [isPlaying]);
+
+  // Media Session API for OS-level controls (Next, Previous, Metadata)
+  useEffect(() => {
+    if (!("mediaSession" in navigator) || !currentTrack) return;
+
+    // Set metadata for the OS media controller
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentTrack.title,
+    });
+
+    // Register action handlers for media keys and OS notifications
+    navigator.mediaSession.setActionHandler("play", () => onPlayPause());
+    navigator.mediaSession.setActionHandler("pause", () => onPlayPause());
+
+    if (hasNext) {
+      navigator.mediaSession.setActionHandler("nexttrack", () => onNext?.());
+    } else {
+      navigator.mediaSession.setActionHandler("nexttrack", null);
+    }
+
+    if (hasPrevious) {
+      navigator.mediaSession.setActionHandler("previoustrack", () => onPrevious?.());
+    } else {
+      navigator.mediaSession.setActionHandler("previoustrack", null);
+    }
+
+    // Seek support for the OS progress bar
+    navigator.mediaSession.setActionHandler("seekto", (details) => {
+      if (details.seekTime !== undefined && audioRef.current) {
+        audioRef.current.currentTime = details.seekTime;
+      }
+    });
+
+    return () => {
+      navigator.mediaSession.setActionHandler("play", null);
+      navigator.mediaSession.setActionHandler("pause", null);
+      navigator.mediaSession.setActionHandler("nexttrack", null);
+      navigator.mediaSession.setActionHandler("previoustrack", null);
+      navigator.mediaSession.setActionHandler("seekto", null);
+    };
+  }, [currentTrack, isPlaying, hasNext, hasPrevious, onPlayPause, onNext, onPrevious]);
 
   // Handle volume (but not when fading - that's handled separately)
   useEffect(() => {
@@ -316,6 +359,22 @@ export function Player({
       audio.removeEventListener("durationchange", updateDuration);
     };
   }, [currentTrack?.url]);
+
+  // Sync playback position with OS media controls
+  useEffect(() => {
+    if ("mediaSession" in navigator && audioRef.current && duration > 0) {
+      try {
+        navigator.mediaSession.setPositionState({
+          duration: duration,
+          playbackRate: audioRef.current.playbackRate || 1,
+          position: Math.min(currentTime, duration),
+        });
+      } catch (e) {
+        // Some browsers are strict about the values (e.g. position <= duration)
+        console.error("MediaSession Position Error:", e);
+      }
+    }
+  }, [currentTime, duration]);
 
   const handleSeek = (newTime: number) => {
     setCurrentTime(newTime);
@@ -526,10 +585,7 @@ export function Player({
             {showVolumeSlider && (
               <>
                 {/* Backdrop to close */}
-                <div 
-                  className="fixed inset-0 z-40" 
-                  onClick={() => setShowVolumeSlider(false)}
-                />
+                <div className="fixed inset-0 z-40" onClick={() => setShowVolumeSlider(false)} />
                 {/* Slider popup */}
                 <div className="absolute bottom-full right-0 mb-2 p-3 bg-gray-800 rounded-lg shadow-lg z-50 flex flex-col items-center gap-2">
                   <span className="text-xs text-gray-300">
