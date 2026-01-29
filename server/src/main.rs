@@ -10,6 +10,7 @@ use uuid::Uuid;
 use sha2::{Sha256, Digest};
 use std::sync::Mutex;
 use tokio::sync::RwLock;
+use std::time::{Instant, Duration};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -35,6 +36,7 @@ struct HlsSession {
     total_segments: u32,
     segment_duration: f32,
     listen_count: u64,
+    last_listen: Option<Instant>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -135,6 +137,7 @@ async fn load_hls_cache(cache_dir: &Path) -> Result<HashMap<String, HlsSession>,
                                     total_segments: entry.total_segments,
                                     segment_duration: entry.segment_duration,
                                     listen_count: entry.listen_count,
+                                    last_listen: None,
                                 };
                                 cache_map.insert(entry.file_hash, session);
                             }
@@ -226,6 +229,7 @@ async fn create_hls_segments(
         total_segments,
         segment_duration,
         listen_count: 0,
+        last_listen: None,
     })
 }
 
@@ -376,7 +380,16 @@ async fn serve_hls_playlist(
         {
             let mut cache = hls_cache.lock().unwrap();
             if let Some(session) = cache.get_mut(&hash) {
-                session.listen_count += 1;
+                let now = Instant::now();
+                let should_increment = match session.last_listen {
+                    Some(last) => now.duration_since(last) > Duration::from_secs(2),
+                    None => true,
+                };
+
+                if should_increment {
+                    session.listen_count += 1;
+                    session.last_listen = Some(now);
+                }
             }
         }
         
