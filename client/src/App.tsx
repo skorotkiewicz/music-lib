@@ -1,4 +1,4 @@
-import { Music, Search } from "lucide-react";
+import { HelpCircle, Music, Search } from "lucide-react";
 import { useState } from "react";
 import { Player } from "@/components/Player";
 import { TrackList } from "@/components/TrackList";
@@ -50,14 +50,28 @@ function AppContent() {
         </div> */}
 
         {/* Search Bar */}
-        <div className="max-w-md mx-auto mb-8 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-          <Input
-            className="pl-10 bg-white/60 border-blue-100 focus:bg-white transition-all shadow-sm"
-            placeholder="Search for a song..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="max-w-md mx-auto mb-8 flex items-center gap-2">
+          <div className="relative flex-1 group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+            <Input
+              className="pl-10 bg-white/60 border-blue-100 focus:bg-white transition-all shadow-sm pr-10"
+              placeholder="Search for a song..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 group-hover:block">
+              <div className="relative group/tooltip">
+                <HelpCircle className="h-4 w-4 text-gray-400 cursor-help hover:text-blue-500 transition-colors" />
+                <div className="absolute bottom-full right-0 mb-2 w-64 p-3 bg-gray-900 border border-gray-700 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover/tooltip:opacity-100 transition-all duration-200 pointer-events-none z-50 transform translate-y-1 group-hover/tooltip:translate-y-0">
+                  <p className="font-bold mb-1">Dynamic Playlist</p>
+                  <p className="text-gray-300 leading-relaxed">
+                    Search acts as a dynamic filter. When a search is active, "Next" and "Shuffle"
+                    will only pick from the results you see.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Track List */}
@@ -87,9 +101,7 @@ function AppContent() {
             repeatMode === "all" ||
             (currentTrackIndex !== null && currentTrackIndex < tracks.length - 1))
         }
-        hasPrevious={
-          shuffleMode || (currentTrackIndex !== null && currentTrackIndex > 0)
-        }
+        hasPrevious={shuffleMode || (currentTrackIndex !== null && currentTrackIndex > 0)}
         volume={volume}
         onVolumeChange={setVolume}
         isMuted={isMuted}
