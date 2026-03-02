@@ -113,8 +113,20 @@ fn draw_header(f: &mut Frame, app: &App, area: Rect) {
     }
 
     if let Some(timer) = app.sleep_timer {
+        let hours = timer / 3600;
+        let minutes = (timer % 3600) / 60;
+        let seconds = timer % 60;
+
+        let time_str = if hours > 0 {
+            format!("{}h {}m {}s", hours, minutes, seconds)
+        } else if minutes > 0 {
+            format!("{}m {}s", minutes, seconds)
+        } else {
+            format!("{}s", seconds)
+        };
+
         status_spans.push(Span::styled(
-            format!(" [TIMER: {}s]", timer),
+            format!(" [TIMER: {}]", time_str),
             Style::default().fg(Color::LightBlue),
         ));
     }
