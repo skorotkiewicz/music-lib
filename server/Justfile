@@ -14,6 +14,10 @@ clean:
 build:
     cargo build --all-targets --all-features
 
+dev:
+    cargo fmt
+    cargo clippy --all-targets --all-features -- -D
+
 doc:
     cargo doc --all-features --no-deps
 
