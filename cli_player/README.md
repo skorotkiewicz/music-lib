@@ -2,6 +2,8 @@
 
 A minimalist, elegant terminal user interface (TUI) music player written in Rust.
 
+![cli_player](../docs/screenshot_cli_player.png)
+
 `cli_player` connects to your active `music-lib` server instance, fetches track metadata, and seamlessly streams chunked HLS audio streams (`.ts` segments) natively without shelling out to `ffmpeg`.
 
 ## Features
