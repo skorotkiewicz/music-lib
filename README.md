@@ -47,12 +47,6 @@ cd client && bun install && bun dev
 
 # Backend
 cd server && cargo run --release
-
-# Backend (fmt + clippy)
-cd server && cargo fmt && cargo clippy --bin "music-server" -- -D warnings
-
-# CLI Player (fmt + clippy)
-cd cli_player && cargo fmt && cargo clippy --bin "cli_player" -- -D warnings
 ```
 
 ### Docker Management
